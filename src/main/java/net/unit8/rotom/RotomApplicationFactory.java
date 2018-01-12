@@ -50,7 +50,6 @@ public class RotomApplicationFactory implements ApplicationFactory {
         app.use(new ResourceMiddleware());
         app.use(new RenderTemplateMiddleware());
         app.use(new RoutingMiddleware(routes));
-        app.use(new DomaTransactionMiddleware<>());
         app.use(new FormMiddleware());
         app.use(new SerDesMiddleware());
         app.use(new ValidateBodyMiddleware<>());

@@ -85,7 +85,9 @@ public class Wiki extends SystemComponent {
             public void start(Wiki wiki) {
                 try {
                     wiki.repository = FileRepositoryBuilder.create(repositoryPath.resolve(".git").toFile());
-                    wiki.repository.create();
+                    if (!wiki.repository.getDirectory().exists()) {
+                        wiki.repository.create(true);
+                    }
                 } catch (IOException e) {
 
                 }
@@ -93,7 +95,9 @@ public class Wiki extends SystemComponent {
 
             @Override
             public void stop(Wiki wiki) {
-                wiki.repository.close();
+                if (wiki.repository != null) {
+                    wiki.repository.close();
+                }
             }
         };
     }

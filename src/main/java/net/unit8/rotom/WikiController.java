@@ -26,6 +26,7 @@ public class WikiController {
     public HttpResponse showPageOrFile(Parameters params) {
         String path = params.get("path");
         Page page = wiki.getPage(path);
-        templateEngine.render("page");
+        return templateEngine.render("page",
+                "page", page);
     }
 }

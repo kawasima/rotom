@@ -1,5 +1,7 @@
 package net.unit8.rotom.model;
 
+import enkan.system.EnkanSystem;
+import enkan.util.BeanBuilder;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -37,7 +39,14 @@ public class WikiTest {
                     .forEach(File::delete);
         }
 
-        Wiki wiki = new Wiki("target/wiki");
+        EnkanSystem system = EnkanSystem.of(
+                "wiki", BeanBuilder.builder(new Wiki())
+                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .build()
+        );
+        system.start();
+        Wiki wiki = system.getComponent("wiki");
+
         wiki.writePage("home.md", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
