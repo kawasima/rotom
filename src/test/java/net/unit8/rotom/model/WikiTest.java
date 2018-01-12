@@ -29,10 +29,13 @@ public class WikiTest {
 
     @Test
     public void test() throws IOException {
-        Files.walk(Paths.get("target/wiki"))
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
+        Path wikiDir = Paths.get("target/wiki");
+        if (Files.exists(wikiDir)) {
+            Files.walk(Paths.get("target/wiki"))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
 
         Wiki wiki = new Wiki("target/wiki");
         wiki.writePage("home.md", "markdown", "# Home page\n\n- a\n- b\n- c".getBytes(), null,

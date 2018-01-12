@@ -139,10 +139,13 @@ public class CommitterTest {
                 odi.close();
             }
 
-            Files.walk(Paths.get("target/workspace"))
-                    .sorted(Comparator.reverseOrder())
-                    .map(Path::toFile)
-                    .forEach(File::delete);
+            Path path = Paths.get("target/workspace");
+            if (Files.notExists(path)) {
+                Files.walk(path)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
 
             Git.cloneRepository()
                     .setBare(false)
