@@ -1,5 +1,7 @@
 package net.unit8.rotom.model;
 
+import enkan.component.ComponentLifecycle;
+import enkan.component.SystemComponent;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -11,35 +13,38 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
-public class Wiki {
+public class Wiki extends SystemComponent {
+    private Path repositoryPath;
+
     private Repository repository;
 
-    public Wiki(String path) throws IOException {
-        repository = FileRepositoryBuilder.create(new File(path, ".git"));
-        repository.create();
-    }
+    public Page getPage(String name) {
+        try {
+            Ref head = repository.exactRef("refs/heads/master");
 
-    public Page getPage(String name) throws IOException {
-        Ref head = repository.exactRef("refs/heads/master");
-
-        // a commit points to a tree
-        try (RevWalk walk = new RevWalk(repository)) {
-            RevCommit commit = walk.parseCommit(head.getObjectId());
-            RevTree tree = walk.parseTree(commit.getTree().getId());
-            try (TreeWalk treeWalk = new TreeWalk(repository)) {
-                treeWalk.addTree(tree);
-                treeWalk.setRecursive(true);
-                treeWalk.setFilter(PathFilter.create(name));
-                if (!treeWalk.next()) {
-                    throw new IllegalStateException("Did not find expected file 'README.md'");
+            // a commit points to a tree
+            try (RevWalk walk = new RevWalk(repository)) {
+                RevCommit commit = walk.parseCommit(head.getObjectId());
+                RevTree tree = walk.parseTree(commit.getTree().getId());
+                try (TreeWalk treeWalk = new TreeWalk(repository)) {
+                    treeWalk.addTree(tree);
+                    treeWalk.setRecursive(true);
+                    treeWalk.setFilter(PathFilter.create(name));
+                    if (!treeWalk.next()) {
+                        throw new IllegalStateException("Did not find expected file 'README.md'");
+                    }
+                    ObjectId objectId = treeWalk.getObjectId(0);
+                    ObjectLoader loader = repository.open(objectId);
+                    BlobEntry blob = new BlobEntry(name, objectId, loader.getCachedBytes());
+                    return new Page(repository, blob);
                 }
-                ObjectId objectId = treeWalk.getObjectId(0);
-                ObjectLoader loader = repository.open(objectId);
-                BlobEntry blob = new BlobEntry(name, objectId, loader.getCachedBytes());
-                return new Page(blob);
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -71,5 +76,29 @@ public class Wiki {
         } catch (IOException e) {
 
         }
+    }
+
+    @Override
+    protected ComponentLifecycle lifecycle() {
+        return new ComponentLifecycle<Wiki>() {
+            @Override
+            public void start(Wiki wiki) {
+                try {
+                    wiki.repository = FileRepositoryBuilder.create(repositoryPath.resolve(".git").toFile());
+                    wiki.repository.create();
+                } catch (IOException e) {
+
+                }
+            }
+
+            @Override
+            public void stop(Wiki wiki) {
+                wiki.repository.close();
+            }
+        };
+    }
+
+    public void setRepositoryPath(Path repositoryPath) {
+        this.repositoryPath = repositoryPath;
     }
 }

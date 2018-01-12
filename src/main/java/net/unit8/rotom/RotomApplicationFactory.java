@@ -23,6 +23,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
         WebApplication app = new WebApplication();
 
         Routes routes = Routes.define(r -> {
+            r.get("/*path").to(WikiController.class, "showPageOrFile");
         }).compile();
 
         app.use(new DefaultCharsetMiddleware());

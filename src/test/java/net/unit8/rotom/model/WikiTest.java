@@ -38,8 +38,12 @@ public class WikiTest {
         }
 
         Wiki wiki = new Wiki("target/wiki");
-        wiki.writePage("home.md", "markdown", "# Home page\n\n- a\n- b\n- c".getBytes(), null,
+        wiki.writePage("home.md", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
+
+        wiki.writePage("fuga.md", "markdown", "# Fuga page\n\n- a\n- b\n- c".getBytes(), null,
+                new Commit("kawasima", "kawasima1016@gmail.com", "init"));
+
         Page page = wiki.getPage("home.md");
         System.out.println(page.toFormattedData());
 
@@ -48,5 +52,10 @@ public class WikiTest {
 
         page = wiki.getPage("home.md");
         System.out.println(page.toFormattedData());
+
+        page.getVersions()
+                .stream()
+                .map(commit -> commit.getId() + " " + commit.getAuthorIdent() + " " + commit.getShortMessage())
+                .forEach(System.out::println);
     }
 }

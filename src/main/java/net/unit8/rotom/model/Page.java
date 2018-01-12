@@ -1,6 +1,11 @@
 package net.unit8.rotom.model;
 
 import net.unit8.rotom.model.filter.Render;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevCommitList;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -13,9 +18,11 @@ import java.util.regex.Pattern;
 public class Page {
     private BlobEntry blob;
     private List<Filter> filterChain;
+    private Repository repository;
 
-    public Page(BlobEntry blob) {
+    public Page(Repository repository, BlobEntry blob) {
         this.blob = blob;
+        this.repository = repository;
         filterChain = new ArrayList<>();
         filterChain.add(new Render());
     }
@@ -60,4 +67,14 @@ public class Page {
                 .orElse(null);
     }
 
+    public List<RevCommit> getVersions() {
+        try(Git git = new Git(repository)) {
+            List<RevCommit> commits = new ArrayList<>();
+            git.log().addPath(getFileName()).call()
+                    .forEach(commits::add);
+            return commits;
+        } catch (GitAPIException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }
