@@ -23,6 +23,9 @@ public class RotomApplicationFactory implements ApplicationFactory {
         WebApplication app = new WebApplication();
 
         Routes routes = Routes.define(r -> {
+            r.get("/").to(WikiController.class, "index");
+            r.get("/create/*path").to(WikiController.class, "createForm");
+            r.post("/create").to(WikiController.class, "create");
             r.get("/*path").to(WikiController.class, "showPageOrFile");
         }).compile();
 

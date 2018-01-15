@@ -1,4 +1,4 @@
-<#import "layout.ftl" as layout>
+<#import "layout.ftl" as layout/>
 <@layout.layout>
 <div id="wiki-wrapper" class="page">
     <div id="head">

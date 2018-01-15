@@ -81,7 +81,10 @@ public class Committer {
     }
 
     public void addToIndex(String dir, String name, String format, byte[] data) throws GitAPIException, IOException {
-        addToIndex(Paths.get(dir, name), data);
+        dir = dir.replace(' ', '-');
+        name = name.replace(' ', '-');
+        String path = name + "." + MarkupType.valueOf(format).getExtension();
+        addToIndex(Paths.get(dir, path), data);
     }
 
     public void addToIndex(Path path, byte[] data) throws IOException {
