@@ -54,13 +54,13 @@ public class WikiTest {
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
         Page page = wiki.getPage("home.md");
-        System.out.println(page.toFormattedData());
+        System.out.println(page.getFormattedData());
 
         wiki.updatePage(page, null, null, "# Home page2\n\n- a\n- b\n- c".getBytes(),
                 new Commit("kawasima", "kawasima1016@gmail.com", "create 2"));
 
         page = wiki.getPage("home.md");
-        System.out.println(page.toFormattedData());
+        System.out.println(page.getFormattedData());
 
         page.getVersions()
                 .stream()

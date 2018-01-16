@@ -3,21 +3,19 @@ package net.unit8.rotom;
 import enkan.collection.Parameters;
 import enkan.component.BeansConverter;
 import enkan.data.HttpResponse;
-import enkan.security.UserPrincipal;
 import enkan.security.bouncr.UserPermissionPrincipal;
 import kotowari.component.TemplateEngine;
 import kotowari.routing.UrlRewriter;
 import net.unit8.rotom.model.Commit;
+import net.unit8.rotom.model.MarkupType;
 import net.unit8.rotom.model.Page;
 import net.unit8.rotom.model.Wiki;
 import org.eclipse.jgit.lib.PersonIdent;
 
 import javax.inject.Inject;
-
-import java.security.Principal;
 import java.util.Objects;
 
-import static enkan.util.HttpResponseUtils.RedirectStatusCode.SEE_OTHER;
+import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
 
 public class WikiController {
     @Inject
@@ -37,10 +35,12 @@ public class WikiController {
 
     public HttpResponse createForm(Parameters params) {
         String path = params.get("path");
+        Page page = new Page(path);
         return templateEngine.render("create",
                 "isCreatePage", true,
                 "isEditPage", false,
-                "content", "",
+                "page", page,
+                "markupTypes", MarkupType.values(),
                 "format", "markdown");
     }
 

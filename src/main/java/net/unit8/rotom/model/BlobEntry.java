@@ -2,7 +2,9 @@ package net.unit8.rotom.model;
 
 import org.eclipse.jgit.lib.ObjectId;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class BlobEntry {
     private String path;
@@ -32,7 +34,9 @@ public class BlobEntry {
     }
 
     public String getDir() {
-        return Paths.get(path).getParent().toString();
+        return Optional.ofNullable(Paths.get(path).getParent())
+                .map(Path::toString)
+                .orElse("");
     }
 
     @Override

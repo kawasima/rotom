@@ -17,3 +17,6 @@ buildNumber.properties
 node_modules
 yarn-error.log
 yarn.lock
+
+# Test data
+/wiki

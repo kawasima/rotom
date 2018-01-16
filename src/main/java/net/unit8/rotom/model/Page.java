@@ -19,6 +19,10 @@ public class Page {
     private List<Filter> filterChain;
     private Repository repository;
 
+    public Page(String path) {
+        this.blob = new BlobEntry(path, null, new byte[0]);
+    }
+
     public Page(Repository repository, BlobEntry blob) {
         this.blob = blob;
         this.repository = repository;
@@ -40,11 +44,21 @@ public class Page {
                 .orElse(null);
     }
 
+    public String getPath() {
+        return Optional.ofNullable(blob)
+                .map(BlobEntry::getDir)
+                .orElse(null);
+    }
+
     public String toString() {
         return new String(blob.getData(), StandardCharsets.UTF_8);
     }
 
-    public String toFormattedData() {
+    public String getTextData() {
+        return new String(blob.getData(), StandardCharsets.UTF_8);
+    }
+
+    public String getFormattedData() {
         String s = new String(blob.getData(), StandardCharsets.UTF_8);
         for (Filter filter : filterChain) {
             s = filter.extract(s, this);
