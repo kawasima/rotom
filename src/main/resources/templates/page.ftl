@@ -8,22 +8,22 @@
                 searchbar
             </li>
             <li class="minibutton">
-                <a href="/" class="action-home-page">Home</a>
+                <a href="${urlFor('showPageOrFile?path=')}" class="action-home-page">Home</a>
             </li>
             <li class="minibutton">
-                <a href="/pages" class="action-all-pages">All</a>
+                <a href="${urlFor('pages')}" class="action-all-pages">All</a>
             </li>
             <li class="minibutton">
-                <a href="/file" class="action-fileview">Files</a>
+                <a href="${urlFor('files')}" class="action-fileview">Files</a>
             </li>
             <li class="minibutton">
-                <a href="/edit/${page.urlPath}" class="action-edit-page">Edit</a>
+                <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit</a>
             </li>
             <li class="minibutton">
-                <a href="/history/${page.urlPath}" class="action-edit-page">History</a>
+                <a href="${urlFor('history?path=' + page.urlPath)}" class="action-edit-page">History</a>
             </li>
             <li class="minibutton">
-                <a href="/latest_changes/${page.urlPath}" class="action-edit-page">Latest Changes</a>
+                <a href="${urlFor('latestChanges?path=' + page.urlPath)}" class="action-edit-page">Latest Changes</a>
             </li>
         </ul>
     </div>

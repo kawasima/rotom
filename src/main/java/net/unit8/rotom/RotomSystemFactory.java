@@ -1,5 +1,6 @@
 package net.unit8.rotom;
 
+import enkan.Env;
 import enkan.component.ApplicationComponent;
 import enkan.component.builtin.HmacEncoder;
 import enkan.component.freemarker.FreemarkerTemplateEngine;
@@ -27,15 +28,18 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                 "wiki", builder(new Wiki())
                         .set(Wiki::setRepositoryPath, Paths.get("wiki"))
                         .build(),
+                "config", builder(new RotomConfiguration())
+                        .set(RotomConfiguration::setBasePath, "/wiki")
+                        .build(),
                 "jwt", new JsonWebToken(),
                 "app", new ApplicationComponent("net.unit8.rotom.RotomApplicationFactory"),
                 "http", builder(new JettyComponent())
-                        .set(JettyComponent::setPort, 3000)
+                        .set(JettyComponent::setPort, Env.getInt("PORT", 3000))
                         .build()
         ).relationships(
                 component("http").using("app"),
                 component("app").using(
-                        "template", "jackson", "metrics", "jwt", "wiki")
+                        "config", "template", "jackson", "metrics", "jwt", "wiki")
         );
     }
 }

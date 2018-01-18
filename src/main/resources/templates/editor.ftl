@@ -1,9 +1,9 @@
 <div id="gollum-editor" data-escaped-name="{{escaped_name}}" class="<#if isCreatePage>create</#if> <#if isEditPage>edit</#if> <#if principal??>uploads-allowed</#if>">
     <#if isCreatePage>
-        <#assign action="/create"/>
+        <#assign action="${urlFor('create')}"/>
     </#if>
     <#if isEditPage>
-        <#assign action="/edit/${page.urlPath}"/>
+        <#assign action="${urlFor('edit?path=' + page.urlPath)}"/>
     </#if>
     <form name="gollum-editor" action="${action}" method="post">
         <fieldset id="gollum-editor-fields">

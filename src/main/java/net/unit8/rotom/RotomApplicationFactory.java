@@ -5,12 +5,13 @@ import enkan.application.WebApplication;
 import enkan.config.ApplicationFactory;
 import enkan.endpoint.ResourceEndpoint;
 import enkan.middleware.*;
-import enkan.middleware.doma2.DomaTransactionMiddleware;
 import enkan.security.bouncr.BouncrBackend;
 import enkan.system.inject.ComponentInjector;
 import kotowari.middleware.*;
 import kotowari.routing.Routes;
+import net.unit8.rotom.model.Wiki;
 
+import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -18,20 +19,30 @@ import static enkan.util.BeanBuilder.builder;
 import static enkan.util.Predicates.NONE;
 
 public class RotomApplicationFactory implements ApplicationFactory {
+    @Inject
+    private RotomConfiguration configuration;
+
     @Override
     public Application create(ComponentInjector injector) {
         WebApplication app = new WebApplication();
 
-        Routes routes = Routes.define(r -> {
-            r.get("/").to(WikiController.class, "index");
-            r.get("/create/*path").to(WikiController.class, "createForm");
-            r.post("/create").to(WikiController.class, "create");
-            r.get("/edit/*path").to(WikiController.class, "edit");
-            r.post("/edit/*dummy").to(WikiController.class, "update");
-            r.get("/history/*path").to(WikiController.class, "history");
-            r.get("/*path/:sha1").requires("sha1", "[a-f0-9]{40}")
-                    .to(WikiController.class, "showPageOrFile");
-            r.get("/*path").to(WikiController.class, "showPageOrFile");
+        injector.inject(this);
+
+        Routes routes = Routes.define(root -> {
+            root.scope(configuration.getBasePath(),  r -> {
+                r.get("/").to(WikiController.class, "index");
+                r.get("/pages").to(WikiController.class, "pages");
+                r.get("/files").to(WikiController.class, "files");
+                r.get("latest_changes/*path").to(WikiController.class, "latestChanges");
+                r.get("/create/*path").to(WikiController.class, "createForm");
+                r.post("/create").to(WikiController.class, "create");
+                r.get("/edit/*path").to(WikiController.class, "edit");
+                r.post("/edit/*dummy").to(WikiController.class, "update");
+                r.get("/history/*path").to(WikiController.class, "history");
+                r.get("/*path/:sha1").requires("sha1", "[a-f0-9]{40}")
+                        .to(WikiController.class, "showPageOrFile");
+                r.get("/*path").to(WikiController.class, "showPageOrFile");
+            });
         }).compile();
 
         app.use(new DefaultCharsetMiddleware());
