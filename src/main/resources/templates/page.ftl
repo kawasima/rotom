@@ -7,19 +7,33 @@
             <li class="minibutton">
                 searchbar
             </li>
+            <li class="minibutton">
+                <a href="/" class="action-home-page">Home</a>
+            </li>
+            <li class="minibutton">
+                <a href="/pages" class="action-all-pages">All</a>
+            </li>
+            <li class="minibutton">
+                <a href="/file" class="action-fileview">Files</a>
+            </li>
+            <li class="minibutton">
+                <a href="/edit/${page.urlPath}" class="action-edit-page">Edit</a>
+            </li>
+            <li class="minibutton">
+                <a href="/history/${page.urlPath}" class="action-edit-page">History</a>
+            </li>
+            <li class="minibutton">
+                <a href="/latest_changes/${page.urlPath}" class="action-edit-page">Latest Changes</a>
+            </li>
         </ul>
     </div>
     <div id="wiki-content">
         <div>
-            <div id="wiki-toc-main">
-                toc_content
-            </div>
-            <div id="wiki-sidebar" class="gollum--content">
-                <div id="sidebar-content" class="markdown-body">
-                    sidebar_content
+            <div id="wiki-body" class="gollum-${page.format}-content">
+                <div class="markdown-body">
+                    ${page.formattedData?no_esc}
                 </div>
             </div>
-
         </div>
     </div>
     <div id="footer">

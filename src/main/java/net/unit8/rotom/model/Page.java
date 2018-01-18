@@ -1,5 +1,6 @@
 package net.unit8.rotom.model;
 
+import enkan.util.CodecUtils;
 import net.unit8.rotom.model.filter.Render;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -7,6 +8,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +46,13 @@ public class Page {
                 .orElse(null);
     }
 
+    public String getUrlPath() {
+        return Optional.of(Paths.get(getPath(), getName()).toString())
+                .map(CodecUtils::urlEncode)
+                .map(u -> u.replaceAll("%2F", "/"))
+                .orElse(null);
+    }
+
     public String getPath() {
         return Optional.ofNullable(blob)
                 .map(BlobEntry::getDir)
@@ -51,7 +60,7 @@ public class Page {
     }
 
     public String toString() {
-        return new String(blob.getData(), StandardCharsets.UTF_8);
+        return getName();
     }
 
     public String getTextData() {

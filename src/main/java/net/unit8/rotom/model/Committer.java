@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.Locale;
 
 public class Committer {
     private Repository repository;
@@ -83,7 +84,8 @@ public class Committer {
     public void addToIndex(String dir, String name, String format, byte[] data) throws GitAPIException, IOException {
         dir = dir.replace(' ', '-');
         name = name.replace(' ', '-');
-        String path = name + "." + MarkupType.valueOf(format).getExtension();
+        String path = name + "." +
+                MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
         addToIndex(Paths.get(dir, path), data);
     }
 

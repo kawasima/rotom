@@ -26,6 +26,11 @@ public class RotomApplicationFactory implements ApplicationFactory {
             r.get("/").to(WikiController.class, "index");
             r.get("/create/*path").to(WikiController.class, "createForm");
             r.post("/create").to(WikiController.class, "create");
+            r.get("/edit/*path").to(WikiController.class, "edit");
+            r.post("/edit/*dummy").to(WikiController.class, "update");
+            r.get("/history/*path").to(WikiController.class, "history");
+            r.get("/*path/:sha1").requires("sha1", "[a-f0-9]{40}")
+                    .to(WikiController.class, "showPageOrFile");
             r.get("/*path").to(WikiController.class, "showPageOrFile");
         }).compile();
 

@@ -1,12 +1,23 @@
 <div id="gollum-editor" data-escaped-name="{{escaped_name}}" class="<#if isCreatePage>create</#if> <#if isEditPage>edit</#if> <#if principal??>uploads-allowed</#if>">
-    <form name="gollum-editor" action="/create" method="post">
+    <#if isCreatePage>
+        <#assign action="/create"/>
+    </#if>
+    <#if isEditPage>
+        <#assign action="/edit/${page.urlPath}"/>
+    </#if>
+    <form name="gollum-editor" action="${action}" method="post">
         <fieldset id="gollum-editor-fields">
             <#if isCreatePage>
                 <div id="gollum-editor-title-field" class="singleline">
                     <label for="page" class="jaws">Page Title</label>
                     <input type="text" name="page" id="gollum-editor-page-title" value="${page.name}">
-                    <p class="path_note"><strong>NOTE:</strong> This page will be created within the &quot;<strong>${page.path}</strong>&quot; directory</p>
+                    <#if !(page.path)?has_content>
+                        <p class="path_note"><strong>NOTE:</strong> This page will be created within the &quot;<strong>${page.path}</strong>&quot; directory</p>
+                    </#if>
                 </div>
+            </#if>
+            <#if isEditPage>
+                <input type="hidden" name="page" id="gollum-editor-page-title" value="${page.name}">
             </#if>
             <input type="hidden" name="path" id="gollum-editor-page-path" value="${page.path}">
 
@@ -78,7 +89,13 @@
                       data-markup-lang="${format}" name="content" class="mousetrap">${page.textData}</textarea>
             <div id="gollum-editor-edit-summary" class="singleline">
                 <label for="message" class="jaws">Edit message:</label>
-                <input type="text" name="message" id="gollum-editor-message-field" class="ph">
+                <#if isCreatePage>
+                    <#assign message="Created ${page.name} ${format}">
+                </#if>
+                <#if isEditPage>
+                    <#assign message="Updated ${page.name} ${format}">
+                </#if>
+                <input type="text" name="message" id="gollum-editor-message-field" value="${message}">
             </div>
 
             <span class="jaws">

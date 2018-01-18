@@ -3,10 +3,7 @@ package net.unit8.rotom.model;
 import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -14,10 +11,12 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.nio.file.Paths;
+import java.util.*;
 
 public class Wiki extends SystemComponent {
     private String indexPage = "Home";
@@ -25,25 +24,86 @@ public class Wiki extends SystemComponent {
 
     private Repository repository;
 
-    public Page getPage(String name) {
-        try {
-            Ref head = repository.exactRef("refs/heads/master");
-            if (head == null) return null;
+    public static String fullpath(String dir, String name) {
+        return Paths.get(dir, name).toString();
+    }
 
+    private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
+        TreeWalk treeWalk = TreeWalk.forPath(repository, path, tree);
+        if(treeWalk == null) {
+            throw new FileNotFoundException("Did not find expected file '" + path + "' in tree '" + tree.getName() + "'");
+        }
+        return treeWalk;
+    }
+
+    public List<Page> getPages(String path) {
+        try {
+            List<Page> pages = new ArrayList<>();
+            Ref head = repository.exactRef("refs/heads/master");
+            if (head == null) return Collections.emptyList();
+            RevTree tree;
+            try (RevWalk revWalk = new RevWalk(repository)) {
+                tree = revWalk.parseCommit(head.getObjectId()).getTree();
+            }
+
+            if (path.isEmpty()) {
+                try (TreeWalk treeWalk = new TreeWalk(repository)) {
+                    treeWalk.addTree(tree);
+                    treeWalk.setRecursive(false);
+                    treeWalk.setPostOrderTraversal(false);
+
+                    while(treeWalk.next()) {
+                        pages.add(new Page(treeWalk.getPathString()));
+                    }
+                }
+            } else {
+                try (TreeWalk treeWalk = buildTreeWalk(tree, path)) {
+                    if ((treeWalk.getFileMode(0).getBits() & FileMode.TYPE_TREE) == 0) {
+                        throw new IllegalStateException(
+                                "Tried to read the elements of a non-tree for commit '" + head.getObjectId() + "' and path '" + path + "', had filemode " + treeWalk.getFileMode(0).getBits());
+                    }
+
+                    try (TreeWalk dirWalk = new TreeWalk(repository)) {
+                        dirWalk.addTree(treeWalk.getObjectId(0));
+                        dirWalk.setRecursive(false);
+                        while (dirWalk.next()) {
+                            pages.add(new Page(dirWalk.getPathString()));
+                        }
+                    }
+                }
+            }
+            return pages;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public Page getPage(String name) {
+        return getPage(name, null);
+    }
+
+    public Page getPage(String name, ObjectId commitId) {
+        try {
+            if (commitId == null) {
+                Ref head = repository.exactRef("refs/heads/master");
+                if (head == null) return null;
+                commitId = head.getObjectId();
+            }
             // a commit points to a tree
             try (RevWalk walk = new RevWalk(repository)) {
-                RevCommit commit = walk.parseCommit(head.getObjectId());
+                RevCommit commit = walk.parseCommit(commitId);
                 RevTree tree = walk.parseTree(commit.getTree().getId());
                 try (TreeWalk treeWalk = new TreeWalk(repository)) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(true);
-                    treeWalk.setFilter(PathFilter.create(name));
+                    treeWalk.setFilter(JGitPathPrefixFilter.create(name));
                     if (!treeWalk.next()) {
-                        throw new IllegalStateException("Did not find expected file 'README.md'");
+                        // Not found
+                        return null;
                     }
                     ObjectId objectId = treeWalk.getObjectId(0);
                     ObjectLoader loader = repository.open(objectId);
-                    BlobEntry blob = new BlobEntry(name, objectId, loader.getCachedBytes());
+                    BlobEntry blob = new BlobEntry(treeWalk.getPathString(), objectId, loader.getCachedBytes());
                     return new Page(repository, blob);
                 }
             }

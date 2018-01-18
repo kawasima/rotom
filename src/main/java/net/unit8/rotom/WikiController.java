@@ -4,18 +4,21 @@ import enkan.collection.Parameters;
 import enkan.component.BeansConverter;
 import enkan.data.HttpResponse;
 import enkan.security.bouncr.UserPermissionPrincipal;
+import enkan.util.CodecUtils;
 import kotowari.component.TemplateEngine;
 import kotowari.routing.UrlRewriter;
 import net.unit8.rotom.model.Commit;
 import net.unit8.rotom.model.MarkupType;
 import net.unit8.rotom.model.Page;
 import net.unit8.rotom.model.Wiki;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 
 import javax.inject.Inject;
 import java.util.Objects;
 
 import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
+import static enkan.util.ThreadingUtils.some;
 
 public class WikiController {
     @Inject
@@ -56,17 +59,70 @@ public class WikiController {
         }
         wiki.writePage(name, format, params.get("content").getBytes(), path,
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
+        Page page = wiki.getPage(Wiki.fullpath(path, name));
         return UrlRewriter.redirect(WikiController.class,
-                "showPageOrFile?path=",
+                "showPageOrFile?path=" + page.getUrlPath(),
                 SEE_OTHER);
     }
 
-    public HttpResponse showPageOrFile(Parameters params) {
+    public HttpResponse edit(Parameters params) {
         String path = params.get("path");
         Page page = wiki.getPage(path);
         if (page == null) {
             return UrlRewriter.redirect(WikiController.class,
-                    "createForm?path=" + path,
+                    "createForm?path=" + CodecUtils.urlEncode(path),
+                    SEE_OTHER);
+        } else {
+            return templateEngine.render("edit",
+                    "isCreatePage", false,
+                    "isEditPage", true,
+                    "markupTypes", MarkupType.values(),
+                    "format", page.getFormat(),
+                    "page", page);
+        }
+    }
+
+    public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
+        String name = params.get("page");
+        String path = params.get("path");
+        String format = params.get("format");
+        PersonIdent committer;
+        if (principal != null) {
+            committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
+        } else {
+            committer = new PersonIdent("anonymous", "anonymous@example.com");
+        }
+        Page page = wiki.getPage(Wiki.fullpath(path, name));
+        wiki.updatePage(page, null, null, params.get("content").getBytes(),
+                new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
+        return UrlRewriter.redirect(WikiController.class,
+                "showPageOrFile?path=" + page.getUrlPath(),
+                SEE_OTHER);
+    }
+
+    public HttpResponse history(Parameters params) {
+        String path = params.get("path");
+        Page page = wiki.getPage(path);
+        if (page == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "showPageOrFile?path=/",
+                    SEE_OTHER);
+        } else {
+            return templateEngine.render("history",
+                    "page", page);
+        }
+    }
+
+    public HttpResponse showPageOrFile(Parameters params) {
+        String path = params.get("path");
+        ObjectId sha1 = some(params.get("sha1"),
+                ObjectId::fromString)
+                .orElse(null);
+
+        Page page = wiki.getPage(path, sha1);
+        if (page == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "createForm?path=" + CodecUtils.urlEncode(path),
                     SEE_OTHER);
         } else {
             return templateEngine.render("page",

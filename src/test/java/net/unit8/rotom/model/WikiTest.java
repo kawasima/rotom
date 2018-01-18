@@ -47,24 +47,52 @@ public class WikiTest {
         system.start();
         Wiki wiki = system.getComponent("wiki");
 
-        wiki.writePage("home.md", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
-        wiki.writePage("fuga.md", "markdown", "# Fuga page\n\n- a\n- b\n- c".getBytes(), null,
+        wiki.writePage("fuga", "markdown", "# Fuga page\n\n- a\n- b\n- c".getBytes(), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
-        Page page = wiki.getPage("home.md");
+        Page page = wiki.getPage("home");
         System.out.println(page.getFormattedData());
 
         wiki.updatePage(page, null, null, "# Home page2\n\n- a\n- b\n- c".getBytes(),
                 new Commit("kawasima", "kawasima1016@gmail.com", "create 2"));
 
-        page = wiki.getPage("home.md");
+        page = wiki.getPage("home");
         System.out.println(page.getFormattedData());
 
         page.getVersions()
                 .stream()
                 .map(commit -> commit.getId() + " " + commit.getAuthorIdent() + " " + commit.getShortMessage())
                 .forEach(System.out::println);
+    }
+
+    @Test
+    public void getPages() throws IOException {
+        Path wikiDir = Paths.get("target/wiki");
+        if (Files.exists(wikiDir)) {
+            Files.walk(Paths.get("target/wiki"))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+
+        EnkanSystem system = EnkanSystem.of(
+                "wiki", BeanBuilder.builder(new Wiki())
+                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .build()
+        );
+        system.start();
+        Wiki wiki = system.getComponent("wiki");
+
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+                new Commit("kawasima", "kawasima1016@gmail.com", "init"));
+
+        wiki.writePage("a/b/test", "markdown", "# Test page\n\n- a\n- b".getBytes(), null,
+                new Commit("kawasima", "kawasima1016@gmail.com", "init"));
+
+        System.out.println(wiki.getPages(""));
+        System.out.println(wiki.getPages("a/b"));
     }
 }

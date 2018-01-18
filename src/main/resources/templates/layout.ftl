@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="/assets/css/editor.css" media="all">
     <link rel="stylesheet" type="text/css" href="/assets/css/dialog.css" media="all">
     <link rel="stylesheet" type="text/css" href="/assets/css/template.css" media="all">
-    <link rel="stylesheet" type="text/css" href="/assets/css/print.css" media="all">
+    <link rel="stylesheet" type="text/css" href="/assets/css/print.css" media="print">
     <title>${title}</title>
 </head>
 <body>

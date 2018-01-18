@@ -12,7 +12,7 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <enkan.version>0.4.0</enkan.version>
+        <enkan.version>0.4.1-SNAPSHOT</enkan.version>
     </properties>
 
     <repositories>
@@ -243,7 +243,7 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.6.0</version>
                         <configuration>
-                            <mainClass>backendexample.ReplMain</mainClass>
+                            <mainClass>DevMain</mainClass>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -264,27 +264,8 @@
                     <artifactId>h2</artifactId>
                     <version>1.4.196</version>
                 </dependency>
-
-                <dependency>
-                    <groupId>org.apache.directory.server</groupId>
-                    <artifactId>apacheds-all</artifactId>
-                    <version>2.0.0-M24</version>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>*</groupId>
-                            <artifactId>*</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-
-                <dependency>
-                    <groupId>mysql</groupId>
-                    <artifactId>mysql-connector-java</artifactId>
-                    <version>5.1.44</version>
-                </dependency>
             </dependencies>
-        </profile>
-
+         </profile>
     </profiles>
 
 </project>
