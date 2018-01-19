@@ -3,11 +3,14 @@ package net.unit8.rotom.model;
 import enkan.system.EnkanSystem;
 import enkan.util.BeanBuilder;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -125,7 +128,7 @@ public class WikiTest {
         wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(),
                 new Commit("kawasima", "kawasima1016@gmail.com", "updated"));
         List<RevCommit> versions = page.getVersions();
-        System.out.println(page.getDiff(versions.get(0).getId().getName(),
-                versions.get(1).getId().getName()));
+        page.getDiff(versions.get(0).getId().getName(),
+                versions.get(1).getId().getName());
     }
 }

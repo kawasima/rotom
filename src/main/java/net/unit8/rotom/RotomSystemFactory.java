@@ -43,7 +43,7 @@ public class RotomSystemFactory implements EnkanSystemFactory {
         ).relationships(
                 component("http").using("app"),
                 component("app").using(
-                        "config", "template", "jackson", "metrics", "jwt", "wiki")
+                        "config", "template", "jackson", "metrics", "jwt", "wiki", "index")
         );
     }
 }

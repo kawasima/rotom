@@ -2,10 +2,10 @@
 <@layout.layout>
 <div id="wiki-wrapper" class="page">
     <div id="head">
-        <h1>${page.fileName}</h1>
+        <h1>${page.name}</h1>
         <ul class="actions">
             <li class="minibutton">
-                searchbar
+                <#include "searchbar.ftl">
             </li>
             <li class="minibutton">
                 <a href="${urlFor('showPageOrFile?path=')}" class="action-home-page">Home</a>

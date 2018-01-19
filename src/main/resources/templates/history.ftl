@@ -17,7 +17,7 @@
         <div id="wiki-history">
             <ul class="actions">
                 <li class="minibutton">
-                    <a href="javascript:void(0);" class="action-compare-revision">Compare Revisions</a>
+                    <a href="javascript:document.querySelector('#version-form').submit();" class="action-compare-revision">Compare Revisions</a>
                 </li>
             </ul>
 
@@ -29,7 +29,7 @@
                             <#list page.versions as version>
                                 <tr>
                                     <td class="checkbox">
-                                        <input type="checkbox" name="versions[]" value="">
+                                        <input type="checkbox" name="versions[]" value="${version.id.getName()}">
                                     </td>
                                     <td class="author">
                                         <a href="javascript:void(0);">

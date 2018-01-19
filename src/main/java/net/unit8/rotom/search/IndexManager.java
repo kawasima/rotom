@@ -3,20 +3,17 @@ package net.unit8.rotom.search;
 import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
 import net.unit8.rotom.model.Page;
+import net.unit8.rotom.model.Wiki;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.document.*;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.store.Directory;
@@ -50,14 +47,15 @@ public class IndexManager extends SystemComponent {
             public void start(IndexManager component) {
                 try {
                     directory = FSDirectory.open(indexPath);
-                    IndexWriterConfig config = new IndexWriterConfig();
+                    analyzer = new JapaneseAnalyzer();
+
+                    IndexWriterConfig config = new IndexWriterConfig(analyzer);
                     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
                     writer = new IndexWriter(directory, config);
                     writer.commit();
 
                     reader = DirectoryReader.open(directory);
                     searcher = new IndexSearcher(reader);
-                    analyzer = new JapaneseAnalyzer();
                     parser = new MultiFieldQueryParser(new String[]{"body", "name", "modified"}, new JapaneseAnalyzer());
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
@@ -93,14 +91,15 @@ public class IndexManager extends SystemComponent {
     }
 
     public void save(Page page) {
-        Document doc = new Document();
-        doc.add(new TextField("body", page.getFormattedData(), Store.NO));
-        doc.add(new TextField("path", page.getPath(), Store.YES));
-        doc.add(new TextField("name", page.getName(), Store.YES));
-        doc.add(new LongPoint("modified", System.currentTimeMillis()));
-
         try {
-            writer.addDocument(doc);
+            String path = Wiki.fullpath(page.getPath(), page.getName());
+            Term term = new Term("path", path);
+            Document doc = new Document();
+            doc.add(new TextField("body", page.getFormattedData(), Store.NO));
+            doc.add(new StringField("path", path, Store.YES));
+            doc.add(new TextField("name", page.getName(), Store.YES));
+            doc.add(new LongPoint("modified", page.getLastVersion().getCommitTime()));
+            writer.updateDocument(term, doc);
             writer.commit();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -116,22 +115,18 @@ public class IndexManager extends SystemComponent {
             Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
 
             List<FoundPage> foundPages = new ArrayList<>(limit);
-            for (int i = offset; i < upper; i++) {
+            long count = Math.min(upper, results.totalHits);
+            for (int i = offset; i < count; i++) {
                 Document doc = reader.document(results.scoreDocs[i].doc);
-                TokenStream tokenStream = TokenSources.getAnyTokenStream(
-                        searcher.getIndexReader(),
-                        results.scoreDocs[i].doc,
-                        "notv",
-                        analyzer
-                        );
-                TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, doc.get("body"), false, 10);
                 foundPages.add(
                         new FoundPage(doc.getField("path").stringValue(),
                                 doc.getField("name").stringValue(),
+                                /*
                                 Arrays.stream(fragments)
                                         .filter(f -> f != null && f.getScore() > 0)
                                         .map(TextFragment::toString)
                                         .collect(Collectors.joining()),
+                                        */ "",
                                 results.scoreDocs[i].score));
             }
             return new Pagination<>(

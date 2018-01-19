@@ -17,6 +17,7 @@ import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +72,7 @@ public class Page {
 
     public String getUrlPath() {
         return Optional.of(blob.getPath())
-                .map(p -> p.replace("\\.\\w+$", ""))
+                .map(p -> p.replaceFirst("\\.\\w+$", ""))
                 .map(CodecUtils::urlEncode)
                 .map(u -> u.replaceAll("%2F", "/"))
                 .orElse(null);
@@ -151,7 +152,7 @@ public class Page {
         }
     }
 
-    public List<DiffEntry> getDiff(String hash1, String hash2) {
+    public String getDiff(String hash1, String hash2) {
         try(Git git = new Git(repository)) {
             AbstractTreeIterator oldTreeParser = prepareTreeParser(hash1);
             AbstractTreeIterator newTreeParser = prepareTreeParser(hash2);
@@ -159,15 +160,16 @@ public class Page {
             List<DiffEntry> diff = git.diff().
                     setOldTree(oldTreeParser).
                     setNewTree(newTreeParser).
-                    setPathFilter(PathFilter.create(getFileName())).call();
-            for (DiffEntry entry : diff) {
-                System.out.println("Entry: " + entry + ", from: " + entry.getOldId() + ", to: " + entry.getNewId());
-                try (DiffFormatter formatter = new DiffFormatter(System.out)) {
-                    formatter.setRepository(repository);
-                    formatter.format(entry);
+                    setPathFilter(PathFilter.create(Wiki.fullpath(getPath(), getFileName()))).call();
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                for (DiffEntry entry : diff) {
+                    try (DiffFormatter formatter = new DiffFormatter(baos)) {
+                        formatter.setRepository(repository);
+                        formatter.format(entry);
+                    }
                 }
+                return new String(baos.toByteArray());
             }
-            return diff;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } catch (GitAPIException e) {

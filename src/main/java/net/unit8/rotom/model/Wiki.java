@@ -149,7 +149,7 @@ public class Wiki extends SystemComponent {
         Committer committer = new Committer(repository);
 
         try {
-            committer.add(page.getPath(), data);
+            committer.add(Wiki.fullpath(page.getPath(), page.getFileName()), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
 

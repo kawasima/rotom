@@ -26,8 +26,7 @@
 
         <div id="compare-content">
             <div class="data highlight">
-                <table cellpadding="0" cellspacing="0">
-                </table>
+                <pre>${diffEntries}</pre>
             </div>
         </div>
         <div id="footer">

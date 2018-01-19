@@ -32,6 +32,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
             root.scope(configuration.getBasePath(),  r -> {
                 r.get("/").to(WikiController.class, "index");
                 r.get("/pages/*path").to(WikiController.class, "pages");
+                r.get("/search").to(WikiController.class, "search");
                 r.get("/files").to(WikiController.class, "files");
                 r.get("latest_changes/*path").to(WikiController.class, "latestChanges");
                 r.get("/create/*path").to(WikiController.class, "createForm");
@@ -93,7 +94,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                     if (Objects.equals(path, crumb)) {
                         breadcrumbs.add(new BreadCrumb(title, null));
                     } else {
-                        breadcrumbs.add(new BreadCrumb(title, crumb));
+                        breadcrumbs.add(new BreadCrumb(title, crumb.replaceFirst("\\.\\w+$", "")));
                     }
                     crumb = crumb.replaceFirst("(^|/)[^/]*$", "");
                 } while(!crumb.isEmpty());

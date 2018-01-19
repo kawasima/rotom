@@ -11,6 +11,10 @@ import net.unit8.rotom.model.Commit;
 import net.unit8.rotom.model.MarkupType;
 import net.unit8.rotom.model.Page;
 import net.unit8.rotom.model.Wiki;
+import net.unit8.rotom.search.FoundPage;
+import net.unit8.rotom.search.IndexManager;
+import net.unit8.rotom.search.Pagination;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 
@@ -29,6 +33,9 @@ public class WikiController {
     private Wiki wiki;
 
     @Inject
+    private IndexManager indexManager;
+
+    @Inject
     private TemplateEngine templateEngine;
 
     public HttpResponse pages(Parameters params) {
@@ -44,6 +51,14 @@ public class WikiController {
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + wiki.getIndexPage(),
                 SEE_OTHER);
+    }
+
+    public HttpResponse search(Parameters params) {
+        String query = Optional.ofNullable(params.get("q")).orElse("");
+        Pagination<FoundPage> pagination = indexManager.search(query, 0, 10);
+        return templateEngine.render("search",
+                "query", query,
+                "pagination", pagination);
     }
 
     public HttpResponse createForm(Parameters params) {
@@ -70,6 +85,7 @@ public class WikiController {
         wiki.writePage(name, format, params.get("content").getBytes(), path,
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
         Page page = wiki.getPage(Wiki.fullpath(path, name));
+        indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + page.getUrlPath(),
                 SEE_OTHER);
@@ -105,6 +121,8 @@ public class WikiController {
         Page page = wiki.getPage(Wiki.fullpath(path, name));
         wiki.updatePage(page, null, null, params.get("content").getBytes(),
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
+        page = wiki.getPage(Wiki.fullpath(path, name));
+        indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + page.getUrlPath(),
                 SEE_OTHER);
@@ -141,7 +159,7 @@ public class WikiController {
     }
 
     public HttpResponse compare(Parameters params) {
-        LinkedList<String> versions = Optional.ofNullable(params.getList("versions[]"))
+        LinkedList<String> versions = Optional.ofNullable(params.getList("versions"))
                 .map(vs -> vs
                         .stream()
                         .map(v -> Objects.toString(v))
@@ -163,6 +181,10 @@ public class WikiController {
 
     public HttpResponse doCompare(Parameters params) {
         Page page = wiki.getPage(params.get("path"));
-        return templateEngine.render("compare");
+        String diffEntries = page.getDiff(params.get("hash1"), params.get("hash2"));
+
+        return templateEngine.render("compare",
+                "page", page,
+                "diffEntries", diffEntries);
     }
 }
