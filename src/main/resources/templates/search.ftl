@@ -21,6 +21,9 @@
                         <li>
                             <a href="${urlFor('showPageOrFile?path=' + page.path)}">${page.name}</a>
                             <span>${page.score}</span>
+                            <div>
+                                ${page.summary}
+                            </div>
                         </li>
                     </#items>
                 </ul>
