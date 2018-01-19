@@ -22,7 +22,7 @@
                             <a href="${urlFor('showPageOrFile?path=' + page.path)}">${page.name}</a>
                             <span>${page.score}</span>
                             <div>
-                                ${page.summary}
+                                ${page.summary?no_esc}
                             </div>
                         </li>
                     </#items>

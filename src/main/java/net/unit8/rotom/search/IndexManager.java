@@ -22,10 +22,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import javax.inject.Inject;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +41,6 @@ public class IndexManager extends SystemComponent {
     private QueryParser parser;
     private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
 
-    private Wiki wiki;
     private Path indexPath;
 
     @Override
@@ -52,7 +48,6 @@ public class IndexManager extends SystemComponent {
         return new ComponentLifecycle<IndexManager>() {
             @Override
             public void start(IndexManager component) {
-                component.wiki = component.getDependency(Wiki.class);
                 try {
                     directory = FSDirectory.open(indexPath);
                     analyzer = new JapaneseAnalyzer();
@@ -104,8 +99,11 @@ public class IndexManager extends SystemComponent {
             Term term = new Term("path", path);
             Document doc = new Document();
 
-            doc.add(new TextField("body",
-                    new HTMLStripCharFilter(new StringReader(page.getFormattedData()))));
+            try(BufferedReader reader = new BufferedReader(new HTMLStripCharFilter(new StringReader(page.getFormattedData())))) {
+                doc.add(new Field("body",
+                        reader.lines().collect(Collectors.joining("\n")),
+                        TextField.TYPE_STORED));
+            }
             doc.add(new StringField("path", path, Store.YES));
             doc.add(new TextField("name", page.getName(), Store.YES));
             doc.add(new LongPoint("modified", page.getLastVersion().getCommitTime()));
@@ -132,10 +130,9 @@ public class IndexManager extends SystemComponent {
             long count = Math.min(upper, results.totalHits);
             for (int i = offset; i < count; i++) {
                 Document doc = reader.document(results.scoreDocs[i].doc);
-                String body = some(wiki.getPage(doc.get("path")), Page::getFormattedData).orElse("");
-                Reader bodyReader = new HTMLStripCharFilter(new StringReader(body));
-                TokenStream tokenStream = analyzer.tokenStream(null, bodyReader);
-                TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, body, false, 10);
+                TokenStream tokenStream = analyzer.tokenStream(null, doc.get("body"));
+
+                TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, doc.get("body"), false, 10);
                 foundPages.add(
                         new FoundPage(doc.get("path"),
                                 doc.get("name"),

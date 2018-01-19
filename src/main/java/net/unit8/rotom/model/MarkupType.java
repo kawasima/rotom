@@ -2,11 +2,13 @@ package net.unit8.rotom.model;
 
 import net.unit8.rotom.model.markup.MarkdownMarkup;
 import net.unit8.rotom.model.markup.TextMarkup;
+import net.unit8.rotom.model.markup.TextileMarkup;
 
 import java.util.regex.Pattern;
 
 public enum MarkupType {
-    MARKDOWN("MarkdownMarkup", "md", "md|mkdn?|mdown|markdown", new MarkdownMarkup()),
+    MARKDOWN("Markdown", "md", "md|mkdn?|mdown|markdown", new MarkdownMarkup()),
+    TEXTILE("Textile", "textile", "textile", new TextileMarkup()),
     TXT("Plain Text", "txt", "txt", new TextMarkup());
 
     private Pattern extPattern;
