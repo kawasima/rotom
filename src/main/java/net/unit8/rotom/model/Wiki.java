@@ -21,6 +21,7 @@ import java.util.*;
 public class Wiki extends SystemComponent {
     private String indexPage = "Home";
     private Path repositoryPath;
+    private String ref = "master";
 
     private Repository repository;
 
@@ -53,7 +54,11 @@ public class Wiki extends SystemComponent {
                     treeWalk.setPostOrderTraversal(false);
 
                     while(treeWalk.next()) {
-                        pages.add(new Page(treeWalk.getPathString()));
+                        String p = treeWalk.getPathString();
+                        if (treeWalk.getFileMode() == FileMode.TREE) {
+                            p = p + "/";
+                        }
+                        pages.add(new Page(p));
                     }
                 }
             } else {
@@ -67,7 +72,7 @@ public class Wiki extends SystemComponent {
                         dirWalk.addTree(treeWalk.getObjectId(0));
                         dirWalk.setRecursive(false);
                         while (dirWalk.next()) {
-                            pages.add(new Page(dirWalk.getPathString()));
+                            pages.add(new Page(Wiki.fullpath(path, dirWalk.getPathString())));
                         }
                     }
                 }
@@ -179,5 +184,9 @@ public class Wiki extends SystemComponent {
 
     public void setIndexPage(String indexPage) {
         this.indexPage = indexPage;
+    }
+
+    public String getRef() {
+        return ref;
     }
 }

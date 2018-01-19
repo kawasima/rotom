@@ -15,7 +15,8 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 
 import javax.inject.Inject;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
 import static enkan.util.ThreadingUtils.some;
@@ -29,6 +30,14 @@ public class WikiController {
 
     @Inject
     private TemplateEngine templateEngine;
+
+    public HttpResponse pages(Parameters params) {
+        String path = params.get("path");
+        List<Page> pages = wiki.getPages(Objects.toString(path, ""));
+        return templateEngine.render("pages",
+                "pages", pages,
+                "wiki", wiki);
+    }
 
     public HttpResponse index() {
         return UrlRewriter.redirect(WikiController.class,
@@ -128,5 +137,31 @@ public class WikiController {
             return templateEngine.render("page",
                     "page", page);
         }
+    }
+
+    public HttpResponse compare(Parameters params) {
+        LinkedList<String> versions = Optional.ofNullable(params.getList("versions[]"))
+                .map(vs -> vs
+                        .stream()
+                        .map(v -> Objects.toString(v))
+                        .collect(Collectors.toList()))
+                .map(LinkedList::new)
+                .orElseGet(LinkedList::new);
+        if (versions.size() < 2) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "history?path=" + params.get("path"),
+                    SEE_OTHER);
+        } else {
+            return UrlRewriter.redirect(WikiController.class,
+                    "doCompare?hash1=" + versions.getFirst() +
+                            "&hash2=" + versions.getLast() +
+                            "&path=" + params.get("path"),
+                    SEE_OTHER);
+        }
+    }
+
+    public HttpResponse doCompare(Parameters params) {
+        Page page = wiki.getPage(params.get("path"));
+        return templateEngine.render("compare");
     }
 }

@@ -4,6 +4,7 @@ import enkan.system.EnkanSystem;
 import enkan.util.BeanBuilder;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 
 public class WikiTest {
     public Repository createNewRepository() throws IOException, GitAPIException {
@@ -92,7 +94,38 @@ public class WikiTest {
         wiki.writePage("a/b/test", "markdown", "# Test page\n\n- a\n- b".getBytes(), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
-        System.out.println(wiki.getPages(""));
-        System.out.println(wiki.getPages("a/b"));
+        wiki.getPages("").stream()
+                .map(p -> p.getPath())
+                .forEach(System.out::println);
+        System.out.println(wiki.getPages("a/b/"));
+    }
+
+    @Test
+    public void diff() throws Exception {
+        Path wikiDir = Paths.get("target/wiki");
+        if (Files.exists(wikiDir)) {
+            Files.walk(Paths.get("target/wiki"))
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
+        }
+
+        EnkanSystem system = EnkanSystem.of(
+                "wiki", BeanBuilder.builder(new Wiki())
+                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .build()
+        );
+        system.start();
+        Wiki wiki = system.getComponent("wiki");
+
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+                new Commit("kawasima", "kawasima1016@gmail.com", "init"));
+
+        Page page = wiki.getPage("home");
+        wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(),
+                new Commit("kawasima", "kawasima1016@gmail.com", "updated"));
+        List<RevCommit> versions = page.getVersions();
+        System.out.println(page.getDiff(versions.get(0).getId().getName(),
+                versions.get(1).getId().getName()));
     }
 }

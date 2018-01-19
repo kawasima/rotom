@@ -11,7 +11,7 @@
                 <a href="${urlFor('showPageOrFile?path=')}" class="action-home-page">Home</a>
             </li>
             <li class="minibutton">
-                <a href="${urlFor('pages')}" class="action-all-pages">All</a>
+                <a href="${urlFor('pages?path=')}" class="action-all-pages">All</a>
             </li>
             <li class="minibutton">
                 <a href="${urlFor('files')}" class="action-fileview">Files</a>

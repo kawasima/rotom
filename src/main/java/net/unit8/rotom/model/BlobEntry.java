@@ -1,5 +1,6 @@
 package net.unit8.rotom.model;
 
+import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 
 import java.nio.file.Path;
@@ -10,11 +11,17 @@ public class BlobEntry {
     private String path;
     private ObjectId sha;
     private byte[] data;
+    private FileMode mode;
 
     public BlobEntry(String path, ObjectId sha, byte[] data) {
+        this(path, sha, data, FileMode.REGULAR_FILE);
+    }
+
+    public BlobEntry(String path, ObjectId sha, byte[] data, FileMode mode) {
         this.path = path;
         this.sha = sha;
         this.data = data;
+        this.mode = mode;
     }
 
     public String getPath() {
