@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public class BlobEntry {
     private String path;
+    private String name;
+    private String dir;
     private ObjectId sha;
     private byte[] data;
     private FileMode mode;
@@ -22,6 +24,9 @@ public class BlobEntry {
         this.sha = sha;
         this.data = data;
         this.mode = mode;
+        this.name = path.replaceFirst("^.*/", "");
+        this.dir  = path.contains("/") ? path.replaceFirst("/[^/]*$", "") : "";
+
     }
 
     public String getPath() {
@@ -37,13 +42,19 @@ public class BlobEntry {
     }
 
     public String getName() {
-        return Paths.get(path).getFileName().toString();
+        return name;
     }
 
     public String getDir() {
-        return Optional.ofNullable(Paths.get(path).getParent())
-                .map(Path::toString)
-                .orElse("");
+        return dir;
+    }
+
+    public ObjectId getSHA() {
+        return sha;
+    }
+
+    public FileMode getMode() {
+        return mode;
     }
 
     @Override

@@ -35,6 +35,7 @@ public class WikiController {
         String path = params.get("path");
         List<Page> pages = wiki.getPages(Objects.toString(path, ""));
         return templateEngine.render("pages",
+                "path", path,
                 "pages", pages,
                 "wiki", wiki);
     }

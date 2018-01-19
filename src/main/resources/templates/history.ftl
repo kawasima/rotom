@@ -22,7 +22,7 @@
             </ul>
 
             <form name="compare-versions" id="version-form" method="post"
-                  action="${urlFor('compare?path=' + page.urlPath)">
+                  action="${urlFor('compare?path=' + page.urlPath)}">
                 <fieldset>
                     <table>
                         <tbody>
@@ -39,7 +39,7 @@
                                     <td class="commit-name">
                                         <span class="time-elapsed" title="">${(version.commitTime * 1000)?number_to_datetime}</span>&nbsp;
                                         ${version.shortMessage}
-                                        [<a href="#{urlFor('showPageOrFile?path=' + page.urlPath + '&sha1=' + version.id.getName())}">${version.id.getName()[0..7]}</a>]
+                                        [<a href="${urlFor('showPageOrFile?path=' + page.urlPath + '&sha1=' + version.id.getName())}">${version.id.getName()[0..7]}</a>]
                                     </td>
                                 </tr>
                             </#list>

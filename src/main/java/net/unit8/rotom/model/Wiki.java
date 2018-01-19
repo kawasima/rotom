@@ -26,7 +26,11 @@ public class Wiki extends SystemComponent {
     private Repository repository;
 
     public static String fullpath(String dir, String name) {
-        return Paths.get(dir, name).toString();
+        if (dir == null || dir.isEmpty()) {
+            return name;
+        } else {
+            return dir.replaceFirst("/+$", "") + "/" + name;
+        }
     }
 
     private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
@@ -72,7 +76,11 @@ public class Wiki extends SystemComponent {
                         dirWalk.addTree(treeWalk.getObjectId(0));
                         dirWalk.setRecursive(false);
                         while (dirWalk.next()) {
-                            pages.add(new Page(Wiki.fullpath(path, dirWalk.getPathString())));
+                            String p = dirWalk.getPathString();
+                            if (dirWalk.getFileMode() == FileMode.TREE) {
+                                p = p + "/";
+                            }
+                            pages.add(new Page(Wiki.fullpath(path, p)));
                         }
                     }
                 }
@@ -141,7 +149,7 @@ public class Wiki extends SystemComponent {
         Committer committer = new Committer(repository);
 
         try {
-            committer.add(page.getFileName(), data);
+            committer.add(page.getPath(), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
 

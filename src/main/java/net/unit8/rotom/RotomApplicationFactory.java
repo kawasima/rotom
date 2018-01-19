@@ -9,11 +9,11 @@ import enkan.security.bouncr.BouncrBackend;
 import enkan.system.inject.ComponentInjector;
 import kotowari.middleware.*;
 import kotowari.routing.Routes;
-import net.unit8.rotom.model.Wiki;
+import net.unit8.rotom.model.BreadCrumb;
 
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
+import java.util.function.Function;
 
 import static enkan.util.BeanBuilder.builder;
 import static enkan.util.Predicates.NONE;
@@ -69,7 +69,9 @@ public class RotomApplicationFactory implements ApplicationFactory {
         injector.inject(bouncrBackend);
         app.use(new AuthenticationMiddleware<>(Arrays.asList(bouncrBackend)));
         app.use(new ResourceMiddleware());
-        app.use(new RenderTemplateMiddleware());
+        app.use(builder(new RenderTemplateMiddleware())
+                .set(RenderTemplateMiddleware::setUserFunctions, createTemplateFunctions())
+                .build());
         app.use(new RoutingMiddleware(routes));
         app.use(new FormMiddleware());
         app.use(new SerDesMiddleware());
@@ -77,6 +79,29 @@ public class RotomApplicationFactory implements ApplicationFactory {
         app.use(new ControllerInvokerMiddleware<>(injector));
 
         return app;
+    }
 
+    private Map<String, Function<List, Object>> createTemplateFunctions() {
+        Map<String, Function<List, Object>> functions = new HashMap<>();
+        functions.put("breadcrumbs", args -> {
+            List<BreadCrumb> breadcrumbs = new ArrayList<>();
+            if (args.size() == 1) {
+                String path = args.get(0).toString();
+                String crumb = path;
+                do {
+                    String title = crumb.replaceFirst("^.*/", "");
+                    if (Objects.equals(path, crumb)) {
+                        breadcrumbs.add(new BreadCrumb(title, null));
+                    } else {
+                        breadcrumbs.add(new BreadCrumb(title, crumb));
+                    }
+                    crumb = crumb.replaceFirst("(^|/)[^/]*$", "");
+                } while(!crumb.isEmpty());
+                breadcrumbs.add(new BreadCrumb("Home", ""));
+                Collections.reverse(breadcrumbs);
+            }
+            return breadcrumbs;
+        });
+        return functions;
     }
 }

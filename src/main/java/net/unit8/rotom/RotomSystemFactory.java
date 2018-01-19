@@ -11,6 +11,7 @@ import enkan.config.EnkanSystemFactory;
 import enkan.system.EnkanSystem;
 import net.unit8.bouncr.sign.JsonWebToken;
 import net.unit8.rotom.model.Wiki;
+import net.unit8.rotom.search.IndexManager;
 
 import java.nio.file.Paths;
 
@@ -27,6 +28,9 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                 "metrics", new MetricsComponent(),
                 "wiki", builder(new Wiki())
                         .set(Wiki::setRepositoryPath, Paths.get("wiki"))
+                        .build(),
+                "index", builder(new IndexManager())
+                        .set(IndexManager::setIndexPath, Paths.get("index"))
                         .build(),
                 "config", builder(new RotomConfiguration())
                         .set(RotomConfiguration::setBasePath, "/wiki")

@@ -122,6 +122,16 @@
             <version>7.2.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-queryparser</artifactId>
+            <version>7.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-highlighter</artifactId>
+            <version>7.2.1</version>
+        </dependency>
+        <dependency>
             <groupId>net.unit8.enkan</groupId>
             <artifactId>enkan-bouncr</artifactId>
             <version>0.3.1</version>
@@ -159,12 +169,6 @@
             <groupId>net.jodah</groupId>
             <artifactId>failsafe</artifactId>
             <version>1.0.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.9.5</version>
         </dependency>
 
         <dependency>

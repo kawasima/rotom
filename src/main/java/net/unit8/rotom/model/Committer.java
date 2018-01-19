@@ -98,6 +98,10 @@ public class Committer {
         addToIndex(Paths.get(path), data);
     }
 
+    public void delete(String path) throws IOException {
+
+    }
+
     public void updateWorkingDir(String dir, String name, String format) throws GitAPIException {
         try (Git git = new Git(repository)) {
             git.checkout()

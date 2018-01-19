@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +31,8 @@ public class Page {
     private Repository repository;
 
     public Page(String path) {
-        this.blob = new BlobEntry(path, null, new byte[0],
+        this.blob = new BlobEntry(path.replaceFirst("/+$", ""),
+                null, new byte[0],
                 path.endsWith("/") ? FileMode.TREE : FileMode.REGULAR_FILE);
     }
 
@@ -45,12 +43,24 @@ public class Page {
         filterChain.add(new Render());
     }
 
+    /**
+     * Get a basename of file.
+     *
+     * /a/b/c.md --> c.md
+     */
     public String getFileName() {
         return Optional.ofNullable(blob)
                 .map(BlobEntry::getName)
                 .orElse(null);
     }
 
+    /**
+     * Get a decoded basename of file without extension.
+     *
+     * /a/b/h-e-l-l-o.md --> "h e l l o"
+     *
+     * @return name
+     */
     public String getName() {
         return Optional.ofNullable(getFileName())
                 .map(name -> name
@@ -60,16 +70,28 @@ public class Page {
     }
 
     public String getUrlPath() {
-        return Optional.of(getPath())
+        return Optional.of(blob.getPath())
+                .map(p -> p.replace("\\.\\w+$", ""))
                 .map(CodecUtils::urlEncode)
                 .map(u -> u.replaceAll("%2F", "/"))
                 .orElse(null);
     }
 
+    /**
+     * Get a dirname of a page.
+     *
+     * @return path
+     */
     public String getPath() {
         return Optional.ofNullable(blob)
-                .map(BlobEntry::getPath)
+                .map(BlobEntry::getDir)
                 .orElse(null);
+    }
+
+    public boolean isRegularFile() {
+        return Optional.ofNullable(blob)
+                .map(b -> b.getMode() == FileMode.REGULAR_FILE)
+                .orElse(false);
     }
 
     public String toString() {
@@ -108,6 +130,22 @@ public class Page {
             git.log().addPath(getFileName()).call()
                     .forEach(commits::add);
             return commits;
+        } catch (GitAPIException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public RevCommit getLastVersion() {
+        try(Git git = new Git(repository)) {
+            Iterator<RevCommit> iter = git.log().addPath(blob.getPath())
+                    .setMaxCount(1)
+                    .call()
+                    .iterator();
+            if (iter.hasNext()) {
+                return iter.next();
+            } else {
+                throw new IllegalStateException("Version not found");
+            }
         } catch (GitAPIException e) {
             throw new IllegalStateException(e);
         }

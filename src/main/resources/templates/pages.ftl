@@ -20,16 +20,26 @@
             <#list pages>
                 <div id="file-browser">
                     <div class="breadcrumb">
+                        <#list breadcrumbs(path) as breadcrumb>
+                            <#if breadcrumb.path??>
+                                <span>
+                                    <a href="${urlFor('pages?path=' + breadcrumb.path)}">${breadcrumb.title}</a>
+                                </span>
+                            <#else>
+                                <span>${breadcrumb.title}</span>
+                            </#if>
+                            <#if !(breadcrumb?is_last)>/</#if>
+                        </#list>
                     </div>
                     <ul>
                         <#items as page>
-                            <#if page.path?contains("/")>
+                            <#if page.regularFile>
                                 <li>
-                                    <a href="${urlFor('pages?path=' + page.urlPath)}" class="folder">${page.name}</a>
+                                    <a href="${urlFor('showPageOrFile?path=' + page.urlPath)}" class="file">${page.name}</a>
                                 </li>
                             <#else>
                                 <li>
-                                    <a href="${urlFor('pages?path=' + page.urlPath)}" class="file">${page.name}</a>
+                                    <a href="${urlFor('pages?path=' + page.urlPath)}" class="folder">${page.name}</a>
                                 </li>
                             </#if>
                         </#items>
