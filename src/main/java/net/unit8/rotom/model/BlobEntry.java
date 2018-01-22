@@ -2,10 +2,8 @@ package net.unit8.rotom.model;
 
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 public class BlobEntry {
@@ -14,16 +12,21 @@ public class BlobEntry {
     private String dir;
     private ObjectId sha;
     private byte[] data;
+    private PersonIdent committer;
+    private int commitTime;
     private Supplier<byte[]> dataSupplier;
     private FileMode mode;
 
-    public BlobEntry(String path, ObjectId sha, Supplier<byte[]> dataSupplier) {
-        this(path, sha, dataSupplier, FileMode.REGULAR_FILE);
+    public BlobEntry(String path, ObjectId sha, PersonIdent committer, int commitTime, Supplier<byte[]> dataSupplier) {
+        this(path, sha, committer, commitTime, dataSupplier, FileMode.REGULAR_FILE);
     }
 
-    public BlobEntry(String path, ObjectId sha, Supplier<byte[]> dataSupplier, FileMode mode) {
+    public BlobEntry(String path, ObjectId sha, PersonIdent committer, int commitTime,
+            Supplier<byte[]> dataSupplier, FileMode mode) {
         this.path = path;
         this.sha = sha;
+        this.committer = committer;
+        this.commitTime = commitTime;
         this.dataSupplier = dataSupplier;
         this.mode = mode;
         this.name = path.replaceFirst("^.*/", "");
@@ -55,6 +58,14 @@ public class BlobEntry {
 
     public ObjectId getSHA() {
         return sha;
+    }
+
+    public PersonIdent getComitter() {
+        return committer;
+    }
+
+    public int getCommitTime() {
+        return commitTime;
     }
 
     public FileMode getMode() {

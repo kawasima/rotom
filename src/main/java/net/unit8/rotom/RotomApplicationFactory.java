@@ -28,25 +28,23 @@ public class RotomApplicationFactory implements ApplicationFactory {
 
         injector.inject(this);
 
-        Routes routes = Routes.define(root -> {
-            root.scope(configuration.getBasePath(),  r -> {
-                r.get("/").to(WikiController.class, "index");
-                r.get("/pages/*path").to(WikiController.class, "pages");
-                r.get("/search").to(WikiController.class, "search");
-                r.get("/files").to(WikiController.class, "files");
-                r.get("/latest_changes/*path").to(WikiController.class, "latestChanges");
-                r.get("/create/*path").to(WikiController.class, "createForm");
-                r.post("/create").to(WikiController.class, "create");
-                r.get("/edit/*path").to(WikiController.class, "edit");
-                r.post("/edit/*dummy").to(WikiController.class, "update");
-                r.get("/history/*path").to(WikiController.class, "history");
-                r.post("/compare/*path").to(WikiController.class, "compare");
-                r.get("/compare/*path/:hash1..:hash2").to(WikiController.class, "doCompare");
-                r.get("/*path/:sha1").requires("sha1", "[a-f0-9]{40}")
-                        .to(WikiController.class, "showPageOrFile");
-                r.get("/*path").to(WikiController.class, "showPageOrFile");
-            });
-        }).compile();
+        Routes routes = Routes.define(root -> root.scope(configuration.getBasePath(), r -> {
+            r.get("/").to(WikiController.class, "index");
+            r.get("/pages/*path").to(WikiController.class, "pages");
+            r.get("/search").to(WikiController.class, "search");
+            r.get("/files").to(WikiController.class, "files");
+            r.get("/latest_changes/*path").to(WikiController.class, "latestChanges");
+            r.get("/create/*path").to(WikiController.class, "createForm");
+            r.post("/create").to(WikiController.class, "create");
+            r.get("/edit/*path").to(WikiController.class, "edit");
+            r.post("/edit/*dummy").to(WikiController.class, "update");
+            r.get("/history/*path").to(WikiController.class, "history");
+            r.post("/compare/*path").to(WikiController.class, "compare");
+            r.get("/compare/*path/:hash1..:hash2").to(WikiController.class, "doCompare");
+            r.get("/*path/:sha1").requires("sha1", "[a-f0-9]{40}")
+                    .to(WikiController.class, "showPageOrFile");
+            r.get("/*path").to(WikiController.class, "showPageOrFile");
+        })).compile();
 
         app.use(new DefaultCharsetMiddleware());
         app.use(NONE, new ServiceUnavailableMiddleware<>(new ResourceEndpoint("/public/html/503.html")));
@@ -68,7 +66,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                 .build());
         BouncrBackend bouncrBackend = new BouncrBackend();
         injector.inject(bouncrBackend);
-        app.use(new AuthenticationMiddleware<>(Arrays.asList(bouncrBackend)));
+        app.use(new AuthenticationMiddleware<>(Collections.singletonList(bouncrBackend)));
         app.use(builder(new ResourceMiddleware())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
                 .build());

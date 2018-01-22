@@ -18,7 +18,6 @@ import net.unit8.rotom.search.Pagination;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
 
 import javax.inject.Inject;
 import java.util.LinkedList;
@@ -133,10 +132,17 @@ public class WikiController {
                 SEE_OTHER);
     }
 
-    public HttpResponse delete(Parameters params) {
+    public HttpResponse delete(Parameters params, UserPermissionPrincipal principal) {
         Page page = some(params.get("path"), path -> wiki.getPage(path)).orElse(null);
         if (page != null) {
-
+            PersonIdent committer;
+            if (principal != null) {
+                committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
+            } else {
+                committer = new PersonIdent("anonymous", "anonymous@example.com");
+            }
+            wiki.deletePage(page, new Commit(committer.getName(), committer.getEmailAddress(),
+                    "Destroyed " + page.getName() + " (" + page.getFormat() +")"));
         }
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=",
@@ -185,7 +191,7 @@ public class WikiController {
         LinkedList<String> versions = Optional.ofNullable(params.getList("versions"))
                 .map(vs -> vs
                         .stream()
-                        .map(v -> Objects.toString(v))
+                        .map(Objects::toString)
                         .collect(Collectors.toList()))
                 .map(LinkedList::new)
                 .orElseGet(LinkedList::new);

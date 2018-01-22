@@ -12,26 +12,20 @@ import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.io.*;
+import java.util.*;
+
+import static enkan.util.ThreadingUtils.some;
 
 public class Wiki extends SystemComponent {
     private String indexPage = "Home";
-    private Path repositoryPath;
     private String ref = "master";
+    private Repository repository;
 
     private Git git;
 
@@ -58,7 +52,8 @@ public class Wiki extends SystemComponent {
             if (head == null) return Collections.emptyList();
             RevTree tree;
             try (RevWalk revWalk = new RevWalk(git.getRepository())) {
-                tree = revWalk.parseCommit(head.getObjectId()).getTree();
+                RevCommit commit = revWalk.parseCommit(head.getObjectId());
+                tree = commit.getTree();
             }
 
             if (path.isEmpty()) {
@@ -126,15 +121,18 @@ public class Wiki extends SystemComponent {
                     }
                     String path = treeWalk.getPathString();
                     ObjectId objectId = treeWalk.getObjectId(0);
+                    git.getRepository().hasObject(objectId);
 
-                    BlobEntry blob = new BlobEntry(path, objectId, () -> {
-                        try {
-                            ObjectLoader loader = git.getRepository().open(objectId);
-                            return loader.getCachedBytes();
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                    });
+                    BlobEntry blob = new BlobEntry(path, objectId,
+                            commit.getCommitterIdent(), commit.getCommitTime(),
+                            () -> {
+                                try {
+                                    ObjectLoader loader = git.getRepository().open(objectId);
+                                    return loader.getCachedBytes();
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
                     return new Page(path, blob);
                 }
             }
@@ -153,9 +151,9 @@ public class Wiki extends SystemComponent {
             committer.addToIndex(sanitizedDir, sanitizedName, format, data);
             committer.commit(commit);
         } catch (GitAPIException e) {
-
+            throw new RuntimeException(e);
         } catch (IOException e) {
-
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -172,7 +170,7 @@ public class Wiki extends SystemComponent {
         } catch (GitAPIException e) {
 
         } catch (IOException e) {
-
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -256,11 +254,10 @@ public class Wiki extends SystemComponent {
             @Override
             public void start(Wiki wiki) {
                 try {
-                    Repository repo = FileRepositoryBuilder.create(repositoryPath.resolve(".git").toFile());
-                    if (!repo.getDirectory().exists()) {
-                        repo.create(true);
+                    if (!some(repository.getDirectory(), File::exists).orElse(true)) {
+                        repository.create(true);
                     }
-                    wiki.git = Git.wrap(repo);
+                    wiki.git = Git.wrap(repository);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -276,8 +273,8 @@ public class Wiki extends SystemComponent {
         };
     }
 
-    public void setRepositoryPath(Path repositoryPath) {
-        this.repositoryPath = repositoryPath;
+    public void setRepository(Repository repository) {
+        this.repository = repository;
     }
 
     public String getIndexPage() {
@@ -290,5 +287,9 @@ public class Wiki extends SystemComponent {
 
     public String getRef() {
         return ref;
+    }
+
+    public void setRef(String ref) {
+        this.ref = ref;
     }
 }

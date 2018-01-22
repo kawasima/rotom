@@ -2,28 +2,10 @@ package net.unit8.rotom.model;
 
 import enkan.util.CodecUtils;
 import net.unit8.rotom.model.filter.Render;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.lib.FileMode;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.treewalk.AbstractTreeIterator;
-import org.eclipse.jgit.treewalk.CanonicalTreeParser;
-import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.lib.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +15,7 @@ public class Page {
 
     public Page(String path) {
         this.blob = new BlobEntry(path.replaceFirst("/+$", ""),
-                null, null,
+                null, null, 0, null,
                 path.endsWith("/") ? FileMode.TREE : FileMode.REGULAR_FILE);
     }
 
@@ -78,8 +60,6 @@ public class Page {
     public String getUrlPath() {
         return Optional.of(blob.getPath())
                 .map(p -> p.replaceFirst("\\.\\w+$", ""))
-                .map(CodecUtils::urlEncode)
-                .map(u -> u.replaceAll("%2F", "/"))
                 .orElse(null);
     }
 
@@ -125,17 +105,16 @@ public class Page {
     public String getFormat() {
         return Arrays.stream(MarkupType.values())
                 .filter(mt -> mt.match(getFileName()))
-                .map(mt -> mt.getName())
+                .map(MarkupType::getName)
                 .findAny()
                 .orElse(null);
     }
 
-    public String getCommitter() {
-        // FIXME
-        return "anonymous";
+    public PersonIdent getCommitter() {
+        return blob.getComitter();
     }
+
     public long getModifiedTime() {
-        // FIxME
-        return 0;
+        return blob.getCommitTime();
     }
 }

@@ -14,6 +14,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ import java.util.Arrays;
 public class LuceneTest {
     @Test
     public void test() throws Exception {
-        Directory directory = FSDirectory.open(Paths.get("index"));
+        Directory directory = new RAMDirectory();
         IndexWriter writer = new IndexWriter(directory,
             new IndexWriterConfig(new JapaneseAnalyzer()));
         try {

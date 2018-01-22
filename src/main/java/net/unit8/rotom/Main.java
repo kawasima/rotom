@@ -6,7 +6,7 @@ import enkan.system.EnkanSystem;
 import enkan.util.ReflectionUtils;
 
 public class Main {
-    private static final String DEFAULT_ENKAN_SYSTEM_FACTORY = "net.unit8.rotom.RotomEnkanSystem";
+    private static final String DEFAULT_ENKAN_SYSTEM_FACTORY = "net.unit8.rotom.RotomSystemFactory";
 
     public static void main(String[] args) {
         System.setProperty("enkan.env", "production");

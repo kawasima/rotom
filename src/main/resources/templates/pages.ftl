@@ -47,7 +47,7 @@
                 </div>
                 <#else>
                 <p id="no-results">
-                    There are no pages in <stong>$ref</stong>
+                    There are no pages in <strong>$ref</strong>
                 </p>
             </#list>
         </div>

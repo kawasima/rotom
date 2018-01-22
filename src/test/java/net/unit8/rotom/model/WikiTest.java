@@ -47,7 +47,7 @@ public class WikiTest {
 
         EnkanSystem system = EnkanSystem.of(
                 "wiki", BeanBuilder.builder(new Wiki())
-                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .set(Wiki::setRepository, FileRepositoryBuilder.create(new File("target/wiki")))
                         .build()
         );
         system.start();
@@ -86,7 +86,7 @@ public class WikiTest {
 
         EnkanSystem system = EnkanSystem.of(
                 "wiki", BeanBuilder.builder(new Wiki())
-                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .set(Wiki::setRepository, FileRepositoryBuilder.create(new File("target/wiki")))
                         .build()
         );
         system.start();
@@ -116,7 +116,7 @@ public class WikiTest {
 
         EnkanSystem system = EnkanSystem.of(
                 "wiki", BeanBuilder.builder(new Wiki())
-                        .set(Wiki::setRepositoryPath, Paths.get("target/wiki"))
+                        .set(Wiki::setRepository, FileRepositoryBuilder.create(new File("target/wiki")))
                         .build()
         );
         system.start();

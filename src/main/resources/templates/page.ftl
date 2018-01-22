@@ -37,7 +37,7 @@
         </div>
     </div>
     <div id="footer">
-        <p id="last-edit">Last edited by <b>${page.committer}</b>, <span class="time-elapsed" title="">${(page.modifiedTime * 1000)?number_to_datetime}</span></p>
+        <p id="last-edit">Last edited by <b>${page.committer.name}</b>, <span class="time-elapsed" title="">${(page.modifiedTime * 1000)?number_to_datetime}</span></p>
     </div>
 </div>
 

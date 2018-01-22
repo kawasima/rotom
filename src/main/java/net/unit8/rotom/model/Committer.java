@@ -1,6 +1,5 @@
 package net.unit8.rotom.model;
 
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -16,8 +15,6 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Locale;
 
@@ -81,7 +78,7 @@ public class Committer {
         return inCoreIndex;
     }
 
-    public void addToIndex(String dir, String name, String format, byte[] data) throws GitAPIException, IOException {
+    public void addToIndex(String dir, String name, String format, byte[] data) throws IOException {
         dir = dir.replace(' ', '-');
         name = name.replace(' ', '-');
         name = name + "." +
