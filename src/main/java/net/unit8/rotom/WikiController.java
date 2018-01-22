@@ -1,5 +1,6 @@
 package net.unit8.rotom;
 
+import enkan.collection.OptionMap;
 import enkan.collection.Parameters;
 import enkan.component.BeansConverter;
 import enkan.data.HttpResponse;
@@ -14,16 +15,20 @@ import net.unit8.rotom.model.Wiki;
 import net.unit8.rotom.search.FoundPage;
 import net.unit8.rotom.search.IndexManager;
 import net.unit8.rotom.search.Pagination;
-import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.treewalk.TreeWalk;
 
 import javax.inject.Inject;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
-import static enkan.util.ThreadingUtils.some;
+import static enkan.util.ThreadingUtils.*;
 
 public class WikiController {
     @Inject
@@ -74,7 +79,7 @@ public class WikiController {
 
     public HttpResponse create(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
-        String path = params.get("path");
+        String dir = params.get("dir");
         String format = params.get("format");
         PersonIdent committer;
         if (principal != null) {
@@ -82,9 +87,9 @@ public class WikiController {
         } else {
             committer = new PersonIdent("anonymous", "anonymous@example.com");
         }
-        wiki.writePage(name, format, params.get("content").getBytes(), path,
+        wiki.writePage(name, format, params.get("content").getBytes(), dir,
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
-        Page page = wiki.getPage(Wiki.fullpath(path, name));
+        Page page = wiki.getPage(Wiki.fullpath(dir, name));
         indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + page.getUrlPath(),
@@ -128,6 +133,16 @@ public class WikiController {
                 SEE_OTHER);
     }
 
+    public HttpResponse delete(Parameters params) {
+        Page page = some(params.get("path"), path -> wiki.getPage(path)).orElse(null);
+        if (page != null) {
+
+        }
+        return UrlRewriter.redirect(WikiController.class,
+                "showPageOrFile?path=",
+                SEE_OTHER);
+    }
+
     public HttpResponse history(Parameters params) {
         String path = params.get("path");
         Page page = wiki.getPage(path);
@@ -136,9 +151,17 @@ public class WikiController {
                     "showPageOrFile?path=/",
                     SEE_OTHER);
         } else {
+            List<RevCommit> versions = wiki.getVersions(OptionMap.of("path", page.getPath()));
             return templateEngine.render("history",
-                    "page", page);
+                    "page", page,
+                    "versions", versions);
         }
+    }
+
+    public HttpResponse latestChanges(Parameters params) {
+        List<RevCommit> versions = wiki.getVersions(OptionMap.of());
+        return templateEngine.render("latestChanges",
+                "versions", versions);
     }
 
     public HttpResponse showPageOrFile(Parameters params) {
@@ -181,7 +204,7 @@ public class WikiController {
 
     public HttpResponse doCompare(Parameters params) {
         Page page = wiki.getPage(params.get("path"));
-        String diffEntries = page.getDiff(params.get("hash1"), params.get("hash2"));
+        String diffEntries = wiki.getDiff(page, params.get("hash1"), params.get("hash2"));
 
         return templateEngine.render("compare",
                 "page", page,

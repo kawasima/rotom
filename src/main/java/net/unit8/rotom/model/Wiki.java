@@ -1,29 +1,39 @@
 package net.unit8.rotom.model;
 
+import enkan.collection.OptionMap;
 import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 public class Wiki extends SystemComponent {
     private String indexPage = "Home";
     private Path repositoryPath;
     private String ref = "master";
 
-    private Repository repository;
+    private Git git;
 
     public static String fullpath(String dir, String name) {
         if (dir == null || dir.isEmpty()) {
@@ -34,7 +44,7 @@ public class Wiki extends SystemComponent {
     }
 
     private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
-        TreeWalk treeWalk = TreeWalk.forPath(repository, path, tree);
+        TreeWalk treeWalk = TreeWalk.forPath(git.getRepository(), path, tree);
         if(treeWalk == null) {
             throw new FileNotFoundException("Did not find expected file '" + path + "' in tree '" + tree.getName() + "'");
         }
@@ -44,15 +54,15 @@ public class Wiki extends SystemComponent {
     public List<Page> getPages(String path) {
         try {
             List<Page> pages = new ArrayList<>();
-            Ref head = repository.exactRef("refs/heads/master");
+            Ref head = git.getRepository().exactRef("refs/heads/master");
             if (head == null) return Collections.emptyList();
             RevTree tree;
-            try (RevWalk revWalk = new RevWalk(repository)) {
+            try (RevWalk revWalk = new RevWalk(git.getRepository())) {
                 tree = revWalk.parseCommit(head.getObjectId()).getTree();
             }
 
             if (path.isEmpty()) {
-                try (TreeWalk treeWalk = new TreeWalk(repository)) {
+                try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(false);
                     treeWalk.setPostOrderTraversal(false);
@@ -72,7 +82,7 @@ public class Wiki extends SystemComponent {
                                 "Tried to read the elements of a non-tree for commit '" + head.getObjectId() + "' and path '" + path + "', had filemode " + treeWalk.getFileMode(0).getBits());
                     }
 
-                    try (TreeWalk dirWalk = new TreeWalk(repository)) {
+                    try (TreeWalk dirWalk = new TreeWalk(git.getRepository())) {
                         dirWalk.addTree(treeWalk.getObjectId(0));
                         dirWalk.setRecursive(false);
                         while (dirWalk.next()) {
@@ -98,15 +108,15 @@ public class Wiki extends SystemComponent {
     public Page getPage(String name, ObjectId commitId) {
         try {
             if (commitId == null) {
-                Ref head = repository.exactRef("refs/heads/master");
+                Ref head = git.getRepository().exactRef("refs/heads/master");
                 if (head == null) return null;
                 commitId = head.getObjectId();
             }
             // a commit points to a tree
-            try (RevWalk walk = new RevWalk(repository)) {
+            try (RevWalk walk = new RevWalk(git.getRepository())) {
                 RevCommit commit = walk.parseCommit(commitId);
                 RevTree tree = walk.parseTree(commit.getTree().getId());
-                try (TreeWalk treeWalk = new TreeWalk(repository)) {
+                try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(true);
                     treeWalk.setFilter(JGitPathPrefixFilter.create(name));
@@ -114,10 +124,18 @@ public class Wiki extends SystemComponent {
                         // Not found
                         return null;
                     }
+                    String path = treeWalk.getPathString();
                     ObjectId objectId = treeWalk.getObjectId(0);
-                    ObjectLoader loader = repository.open(objectId);
-                    BlobEntry blob = new BlobEntry(treeWalk.getPathString(), objectId, loader.getCachedBytes());
-                    return new Page(repository, blob);
+
+                    BlobEntry blob = new BlobEntry(path, objectId, () -> {
+                        try {
+                            ObjectLoader loader = git.getRepository().open(objectId);
+                            return loader.getCachedBytes();
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
+                    return new Page(path, blob);
                 }
             }
         } catch (IOException e) {
@@ -130,7 +148,7 @@ public class Wiki extends SystemComponent {
         String sanitizedName = name.replace(' ', '-');
         String sanitizedDir  = dir.replace(' ', '-');
 
-        Committer committer = new Committer(repository);
+        Committer committer = new Committer(git.getRepository());
         try {
             committer.addToIndex(sanitizedDir, sanitizedName, format, data);
             committer.commit(commit);
@@ -146,10 +164,10 @@ public class Wiki extends SystemComponent {
         if (format == null) format = page.getFormat();
 
         boolean rename = !Objects.equals(name, page.getName());
-        Committer committer = new Committer(repository);
+        Committer committer = new Committer(git.getRepository());
 
         try {
-            committer.add(Wiki.fullpath(page.getPath(), page.getFileName()), data);
+            committer.add(page.getPath(), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
 
@@ -158,25 +176,101 @@ public class Wiki extends SystemComponent {
         }
     }
 
+    public void deletePage(Page page, Commit commit) {
+        Committer committer = new Committer(git.getRepository());
+        try {
+            git.rm()
+                    .addFilepattern(page.getPath())
+                    .call();
+            committer.commit(commit);
+        } catch (GitAPIException e) {
+
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public List<RevCommit> getVersions(OptionMap options) {
+        List<RevCommit> commits = new ArrayList<>();
+        try {
+            LogCommand log = git.log();
+            if(options.containsKey("path")) {
+                log.addPath(options.getString("path"));
+            }
+            log.setSkip(options.getInt("offset", 0));
+            log.setMaxCount(options.getInt("limit", 10));
+            log.call().forEach(commits::add);
+            return commits;
+        } catch (GitAPIException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public String getDiff(Page page, String hash1, String hash2) {
+        try {
+            AbstractTreeIterator oldTreeParser = prepareTreeParser(git.getRepository(), hash1);
+            AbstractTreeIterator newTreeParser = prepareTreeParser(git.getRepository(), hash2);
+
+            List<DiffEntry> diff = git.diff().
+                    setOldTree(oldTreeParser).
+                    setNewTree(newTreeParser).
+                    setPathFilter(PathFilter.create(page.getPath())).call();
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                for (DiffEntry entry : diff) {
+                    try (DiffFormatter formatter = new DiffFormatter(baos)) {
+                        formatter.setRepository(git.getRepository());
+                        formatter.format(entry);
+                    }
+                }
+                return new String(baos.toByteArray());
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (GitAPIException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private AbstractTreeIterator prepareTreeParser(Repository repository, String objectId) throws IOException {
+        // from the commit we can build the tree which allows us to construct the TreeParser
+        //noinspection Duplicates
+        try (RevWalk walk = new RevWalk(repository)) {
+            RevCommit commit = walk.parseCommit(ObjectId.fromString(objectId));
+            RevTree tree = walk.parseTree(commit.getTree().getId());
+
+            CanonicalTreeParser treeParser = new CanonicalTreeParser();
+            try (ObjectReader reader = repository.newObjectReader()) {
+                treeParser.reset(reader, tree.getId());
+            }
+
+            walk.dispose();
+
+            return treeParser;
+        }
+    }
+
+
     @Override
     protected ComponentLifecycle lifecycle() {
         return new ComponentLifecycle<Wiki>() {
             @Override
             public void start(Wiki wiki) {
                 try {
-                    wiki.repository = FileRepositoryBuilder.create(repositoryPath.resolve(".git").toFile());
-                    if (!wiki.repository.getDirectory().exists()) {
-                        wiki.repository.create(true);
+                    Repository repo = FileRepositoryBuilder.create(repositoryPath.resolve(".git").toFile());
+                    if (!repo.getDirectory().exists()) {
+                        repo.create(true);
                     }
+                    wiki.git = Git.wrap(repo);
                 } catch (IOException e) {
-
+                    throw new UncheckedIOException(e);
                 }
             }
 
             @Override
             public void stop(Wiki wiki) {
-                if (wiki.repository != null) {
-                    wiki.repository.close();
+                if (wiki.git != null) {
+                    git.getRepository().close();
+                    git.close();
                 }
             }
         };

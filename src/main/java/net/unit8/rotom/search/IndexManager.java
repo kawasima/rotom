@@ -3,34 +3,36 @@ package net.unit8.rotom.search;
 import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
 import net.unit8.rotom.model.Page;
-import net.unit8.rotom.model.Wiki;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
-import org.apache.lucene.analysis.charfilter.HTMLStripCharFilterFactory;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.highlight.*;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
+import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.zeromq.ZContext;
+import org.zeromq.ZMQ;
+import org.zeromq.ZMsg;
+import org.zeromq.ZThread;
 
-import javax.inject.Inject;
-import java.io.*;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static enkan.util.ThreadingUtils.some;
-import static org.apache.lucene.document.Field.Store;
 
 public class IndexManager extends SystemComponent {
     private Directory directory;
@@ -41,81 +43,78 @@ public class IndexManager extends SystemComponent {
     private QueryParser parser;
     private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
 
+    private ZContext ctx;
+    private ZMQ.Socket socket;
     private Path indexPath;
 
     @Override
     protected ComponentLifecycle<IndexManager> lifecycle() {
         return new ComponentLifecycle<IndexManager>() {
             @Override
-            public void start(IndexManager component) {
+            public void start(IndexManager c) {
                 try {
-                    directory = FSDirectory.open(indexPath);
-                    analyzer = new JapaneseAnalyzer();
+                    c.directory = FSDirectory.open(c.indexPath);
+                    c.analyzer = new JapaneseAnalyzer();
 
                     IndexWriterConfig config = new IndexWriterConfig(analyzer);
                     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-                    writer = new IndexWriter(directory, config);
-                    writer.commit();
+                    c.writer = new IndexWriter(c.directory, config);
+                    c.writer.commit();
 
-                    reader = DirectoryReader.open(writer);
-                    searcher = new IndexSearcher(reader);
-                    parser = new MultiFieldQueryParser(new String[]{"body", "name", "modified"}, new JapaneseAnalyzer());
+                    c.reader = DirectoryReader.open(c.writer);
+                    c.searcher = new IndexSearcher(c.reader);
+                    c.parser = new MultiFieldQueryParser(new String[]{"body", "name", "modified"}, c.analyzer);
+
+                    c.ctx = new ZContext();
+                    ZMQ.Socket commitSocket = ZThread.fork(c.ctx, (args, ctx, pipe) -> {
+                        while(true) {
+                            pipe.recv();
+                            // Reader re-open
+                            try {
+                                c.writer.commit();
+                                c.reader = DirectoryReader.openIfChanged(c.reader, c.writer);
+                                c.searcher = new IndexSearcher(reader);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        }
+                    });
+                    c.socket = ZThread.fork(c.ctx, new LuceneTaskRunner(), writer, commitSocket);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             }
 
             @Override
-            public void stop(IndexManager component) {
-                if (reader != null) {
+            public void stop(IndexManager c) {
+                if (c.reader != null) {
                     try {
-                        reader.close();
+                        c.reader.close();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 }
 
-                if (writer != null) {
+                if (c.writer != null) {
                     try {
-                        writer.close();
+                        c.writer.close();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 }
-                if (directory != null) {
+                if (c.directory != null) {
                     try {
-                        directory.close();
+                        c.directory.close();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
+                }
+
+                if (c.ctx != null) {
+                    c.ctx.destroy();
                 }
             }
         };
-    }
-
-    public void save(Page page) {
-        try {
-            String path = Wiki.fullpath(page.getPath(), page.getName());
-            Term term = new Term("path", path);
-            Document doc = new Document();
-
-            try(BufferedReader reader = new BufferedReader(new HTMLStripCharFilter(new StringReader(page.getFormattedData())))) {
-                doc.add(new Field("body",
-                        reader.lines().collect(Collectors.joining("\n")),
-                        TextField.TYPE_STORED));
-            }
-            doc.add(new StringField("path", path, Store.YES));
-            doc.add(new TextField("name", page.getName(), Store.YES));
-            doc.add(new LongPoint("modified", page.getLastVersion().getCommitTime()));
-            writer.updateDocument(term, doc);
-            writer.commit();
-
-            // Reader re-open
-            reader = DirectoryReader.openIfChanged(reader, writer);
-            searcher = new IndexSearcher(reader);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     public Pagination<FoundPage> search(String queryStr, int offset, int limit) {
@@ -151,6 +150,22 @@ public class IndexManager extends SystemComponent {
             throw new IllegalStateException(e);
         }
 
+    }
+
+    public void save(Page page) {
+        ZMsg msg = new ZMsg();
+        msg.add("update");
+        msg.add(page.getPath());
+        msg.add(page.getName());
+        msg.add(page.getFormattedData());
+        msg.add(String.valueOf(page.getModifiedTime()));
+        msg.send(socket);
+    }
+
+    public void deleteAll() {
+        ZMsg msg = new ZMsg();
+        msg.push("deleteAll");
+        msg.send(socket);
     }
 
     public void setIndexPath(Path indexPath) {

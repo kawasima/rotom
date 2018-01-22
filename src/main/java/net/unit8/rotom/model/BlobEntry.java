@@ -6,6 +6,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 public class BlobEntry {
     private String path;
@@ -13,20 +14,20 @@ public class BlobEntry {
     private String dir;
     private ObjectId sha;
     private byte[] data;
+    private Supplier<byte[]> dataSupplier;
     private FileMode mode;
 
-    public BlobEntry(String path, ObjectId sha, byte[] data) {
-        this(path, sha, data, FileMode.REGULAR_FILE);
+    public BlobEntry(String path, ObjectId sha, Supplier<byte[]> dataSupplier) {
+        this(path, sha, dataSupplier, FileMode.REGULAR_FILE);
     }
 
-    public BlobEntry(String path, ObjectId sha, byte[] data, FileMode mode) {
+    public BlobEntry(String path, ObjectId sha, Supplier<byte[]> dataSupplier, FileMode mode) {
         this.path = path;
         this.sha = sha;
-        this.data = data;
+        this.dataSupplier = dataSupplier;
         this.mode = mode;
         this.name = path.replaceFirst("^.*/", "");
         this.dir  = path.contains("/") ? path.replaceFirst("/[^/]*$", "") : "";
-
     }
 
     public String getPath() {
@@ -38,6 +39,9 @@ public class BlobEntry {
     }
 
     public byte[] getData() {
+        if (data == null) {
+            data = dataSupplier == null ? new byte[0] : dataSupplier.get();
+        }
         return data;
     }
 

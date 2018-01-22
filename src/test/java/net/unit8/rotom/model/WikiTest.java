@@ -1,5 +1,6 @@
 package net.unit8.rotom.model;
 
+import enkan.collection.OptionMap;
 import enkan.system.EnkanSystem;
 import enkan.util.BeanBuilder;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -67,7 +68,7 @@ public class WikiTest {
         page = wiki.getPage("home");
         System.out.println(page.getFormattedData());
 
-        page.getVersions()
+        wiki.getVersions(OptionMap.of("path", page.getPath()))
                 .stream()
                 .map(commit -> commit.getId() + " " + commit.getAuthorIdent() + " " + commit.getShortMessage())
                 .forEach(System.out::println);
@@ -127,8 +128,9 @@ public class WikiTest {
         Page page = wiki.getPage("home");
         wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(),
                 new Commit("kawasima", "kawasima1016@gmail.com", "updated"));
-        List<RevCommit> versions = page.getVersions();
-        page.getDiff(versions.get(0).getId().getName(),
+        List<RevCommit> versions = wiki.getVersions(OptionMap.of("path", page.getPath()));
+        wiki.getDiff(page,
+                versions.get(0).getId().getName(),
                 versions.get(1).getId().getName());
     }
 }

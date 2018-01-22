@@ -26,7 +26,7 @@
                 <fieldset>
                     <table>
                         <tbody>
-                            <#list page.versions as version>
+                            <#list versions as version>
                                 <tr>
                                     <td class="checkbox">
                                         <input type="checkbox" name="versions[]" value="${version.id.getName()}">

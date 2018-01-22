@@ -11,15 +11,15 @@
                 <div id="gollum-editor-title-field" class="singleline">
                     <label for="page" class="jaws">Page Title</label>
                     <input type="text" name="page" id="gollum-editor-page-title" value="${page.name}">
-                    <#if !(page.path)?has_content>
-                        <p class="path_note"><strong>NOTE:</strong> This page will be created within the &quot;<strong>${page.path}</strong>&quot; directory</p>
+                    <#if (page.dir)?has_content>
+                        <p class="path_note"><strong>NOTE:</strong> This page will be created within the &quot;<strong>${page.dir}</strong>&quot; directory</p>
                     </#if>
                 </div>
             </#if>
             <#if isEditPage>
                 <input type="hidden" name="page" id="gollum-editor-page-title" value="${page.name}">
             </#if>
-            <input type="hidden" name="path" id="gollum-editor-page-path" value="${page.path}">
+            <input type="hidden" name="dir" id="gollum-editor-page-dir" value="${page.dir}">
 
             <div id="gollum-editor-function-bar">
                 <div id="gollum-editor-function-buttons">

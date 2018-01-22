@@ -23,7 +23,11 @@ public class JGitPathPrefixFilter extends TreeFilter {
     private JGitPathPrefixFilter(final String s) {
         pathStr = s;
         pathRaw = Constants.encode(pathStr);
-        lastSlashIndex = pathStr.lastIndexOf('/');
+        int idx = pathRaw.length-1;
+        for (; idx>=0; idx--) {
+            if (pathRaw[idx] == 0x2f) break;
+        }
+        lastSlashIndex = idx;
     }
 
     @Override

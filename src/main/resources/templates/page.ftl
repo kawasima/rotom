@@ -13,8 +13,8 @@
             <li class="minibutton">
                 <a href="${urlFor('pages?path=')}" class="action-all-pages">All</a>
             </li>
-            <li class="minibutton">
-                <a href="${urlFor('files')}" class="action-fileview">Files</a>
+            <li class="minibutton jaws">
+                <a href="#" id="minibutton-new-page">New</a>
             </li>
             <li class="minibutton">
                 <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit</a>
@@ -37,7 +37,7 @@
         </div>
     </div>
     <div id="footer">
-        <p id="last-edit">Last edited by <b>${page.lastVersion.committerIdent.name}</b>, <span class="time-elapsed" title="">${(page.lastVersion.commitTime * 1000)?number_to_datetime}</span></p>
+        <p id="last-edit">Last edited by <b>${page.committer}</b>, <span class="time-elapsed" title="">${(page.modifiedTime * 1000)?number_to_datetime}</span></p>
     </div>
 </div>
 

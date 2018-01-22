@@ -84,30 +84,18 @@ public class Committer {
     public void addToIndex(String dir, String name, String format, byte[] data) throws GitAPIException, IOException {
         dir = dir.replace(' ', '-');
         name = name.replace(' ', '-');
-        String path = name + "." +
+        name = name + "." +
                 MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
-        addToIndex(Paths.get(dir, path), data);
+        addToIndex(Wiki.fullpath(dir, name), data);
     }
 
-    public void addToIndex(Path path, byte[] data) throws IOException {
+    public void addToIndex(String path, byte[] data) throws IOException {
         final ObjectId headId = repository.resolve("master^{commit}");
-        index = createTemporaryIndex(headId, path.normalize().toString(), data);
+        index = createTemporaryIndex(headId, path, data);
     }
 
     public void add(String path, byte[] data) throws IOException {
-        addToIndex(Paths.get(path), data);
-    }
-
-    public void delete(String path) throws IOException {
-
-    }
-
-    public void updateWorkingDir(String dir, String name, String format) throws GitAPIException {
-        try (Git git = new Git(repository)) {
-            git.checkout()
-                    .addPath(name)
-                    .call();
-        }
+        addToIndex(path, data);
     }
 
     public ObjectId commit(Commit commitInfo) throws GitAPIException, IOException {

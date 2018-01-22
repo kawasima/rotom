@@ -23,23 +23,22 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Page {
     private BlobEntry blob;
     private List<Filter> filterChain;
-    private Repository repository;
 
     public Page(String path) {
         this.blob = new BlobEntry(path.replaceFirst("/+$", ""),
-                null, new byte[0],
+                null, null,
                 path.endsWith("/") ? FileMode.TREE : FileMode.REGULAR_FILE);
     }
 
-    public Page(Repository repository, BlobEntry blob) {
+    public Page(String path, BlobEntry blob) {
         this.blob = blob;
-        this.repository = repository;
         filterChain = new ArrayList<>();
         filterChain.add(new Render());
     }
@@ -52,6 +51,12 @@ public class Page {
     public String getFileName() {
         return Optional.ofNullable(blob)
                 .map(BlobEntry::getName)
+                .orElse(null);
+    }
+
+    public String getDir() {
+        return Optional.ofNullable(blob)
+                .map(BlobEntry::getDir)
                 .orElse(null);
     }
 
@@ -85,7 +90,7 @@ public class Page {
      */
     public String getPath() {
         return Optional.ofNullable(blob)
-                .map(BlobEntry::getDir)
+                .map(BlobEntry::getPath)
                 .orElse(null);
     }
 
@@ -125,73 +130,12 @@ public class Page {
                 .orElse(null);
     }
 
-    public List<RevCommit> getVersions() {
-        try(Git git = new Git(repository)) {
-            List<RevCommit> commits = new ArrayList<>();
-            git.log().addPath(getFileName()).call()
-                    .forEach(commits::add);
-            return commits;
-        } catch (GitAPIException e) {
-            throw new IllegalStateException(e);
-        }
+    public String getCommitter() {
+        // FIXME
+        return "anonymous";
     }
-
-    public RevCommit getLastVersion() {
-        try(Git git = new Git(repository)) {
-            Iterator<RevCommit> iter = git.log().addPath(blob.getPath())
-                    .setMaxCount(1)
-                    .call()
-                    .iterator();
-            if (iter.hasNext()) {
-                return iter.next();
-            } else {
-                throw new IllegalStateException("Version not found");
-            }
-        } catch (GitAPIException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public String getDiff(String hash1, String hash2) {
-        try(Git git = new Git(repository)) {
-            AbstractTreeIterator oldTreeParser = prepareTreeParser(hash1);
-            AbstractTreeIterator newTreeParser = prepareTreeParser(hash2);
-
-            List<DiffEntry> diff = git.diff().
-                    setOldTree(oldTreeParser).
-                    setNewTree(newTreeParser).
-                    setPathFilter(PathFilter.create(Wiki.fullpath(getPath(), getFileName()))).call();
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                for (DiffEntry entry : diff) {
-                    try (DiffFormatter formatter = new DiffFormatter(baos)) {
-                        formatter.setRepository(repository);
-                        formatter.format(entry);
-                    }
-                }
-                return new String(baos.toByteArray());
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (GitAPIException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private AbstractTreeIterator prepareTreeParser(String objectId) throws IOException {
-        // from the commit we can build the tree which allows us to construct the TreeParser
-        //noinspection Duplicates
-        try (RevWalk walk = new RevWalk(repository)) {
-            RevCommit commit = walk.parseCommit(ObjectId.fromString(objectId));
-            RevTree tree = walk.parseTree(commit.getTree().getId());
-
-            CanonicalTreeParser treeParser = new CanonicalTreeParser();
-            try (ObjectReader reader = repository.newObjectReader()) {
-                treeParser.reset(reader, tree.getId());
-            }
-
-            walk.dispose();
-
-            return treeParser;
-        }
+    public long getModifiedTime() {
+        // FIxME
+        return 0;
     }
 }

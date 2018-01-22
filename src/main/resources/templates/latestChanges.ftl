@@ -1,11 +1,11 @@
 <#import "layout.ftl" as layout>
 <@layout.layout>
-    <div id="wiki-wrappter" class="history">
+    <div id="wiki-wrapper" class="history">
         <div id="head">
-            <h1><strong>${page.name}</strong></h1>
+            <h1><strong>Latest Changes (Globally)</strong></h1>
             <ul class="actions">
                 <li class="minibutton">
-                    <a href="${urlFor('showPageOrFile?path=' + page.urlPath)}"
+                    <a href="${urlFor('showPageOrFile?path=')}"
                        class="action-view-page">Home</a>
                 </li>
             </ul>
@@ -25,7 +25,9 @@
                                 <td class="commit-name">
                                     <span class="time-elapsed" title="">${(version.commitTime * 1000)?number_to_datetime}:</span>&nbsp;
                                     ${version.shortMessage}
-                                    [<a href="${urlFor('showPageOrFile?path=' + page.urlPath + '&sha1=' + version.id.getName())}">${version.id.getName()[0..7]}</a>]
+                                    [${version.id.getName()[0..7]}]
+                                    <br>
+                                    <a href=""></a>
                                 </td>
                             </tr>
                         </#list>

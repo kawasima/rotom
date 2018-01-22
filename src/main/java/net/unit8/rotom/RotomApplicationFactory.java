@@ -69,7 +69,9 @@ public class RotomApplicationFactory implements ApplicationFactory {
         BouncrBackend bouncrBackend = new BouncrBackend();
         injector.inject(bouncrBackend);
         app.use(new AuthenticationMiddleware<>(Arrays.asList(bouncrBackend)));
-        app.use(new ResourceMiddleware());
+        app.use(builder(new ResourceMiddleware())
+                .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
+                .build());
         app.use(builder(new RenderTemplateMiddleware())
                 .set(RenderTemplateMiddleware::setUserFunctions, createTemplateFunctions())
                 .build());
@@ -103,6 +105,8 @@ public class RotomApplicationFactory implements ApplicationFactory {
             }
             return breadcrumbs;
         });
+
+        functions.put("baseUrl", args -> configuration.getBasePath());
         return functions;
     }
 }
