@@ -14,7 +14,6 @@ public class RotomConfiguration extends SystemComponent {
         return new ComponentLifecycle<RotomConfiguration>() {
             @Override
             public void start(RotomConfiguration config) {
-
             }
 
             @Override

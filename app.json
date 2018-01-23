@@ -1,0 +1,9 @@
+{
+  "name": "rotom",
+  "description": "Git based wiki - Gollum clone",
+  "keywords": [
+    "wiki"
+  ],
+  "repository": "https://github.com/kawasima/rotom",
+  "logo": ""
+}
