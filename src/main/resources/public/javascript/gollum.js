@@ -41,8 +41,7 @@ $(document).ready(function() {
   $('#delete-link').click( function(e) {
     var ok = confirm($(this).data('confirm'));
     if ( ok ) {
-      var loc = baseUrl + '/delete/' + pageFullPath;
-      window.location = loc;
+      $(this).closest("form").submit();
     }
     // Don't navigate on cancel.
     e.preventDefault();

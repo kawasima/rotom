@@ -8,11 +8,14 @@
                 </li>
                 <li class="minibutton">
                     <a href="${urlFor('showPageOrFile?path=')}"
-                    class="action-home-page">Home</a>
+                       class="action-home-page">Home</a>
                 </li>
-                <li class="minibutton jaws">
-                    <a href="#" id="minibutton-new-page">New</a>
-                </li>
+
+                <#if hasPermission('page:create')>
+                    <li class="minibutton jaws">
+                        <a href="#" id="minibutton-new-page">New</a>
+                    </li>
+                </#if>
             </ul>
         </div>
 

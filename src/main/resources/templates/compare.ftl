@@ -13,10 +13,13 @@
                        class="action-view-page">View Page</a>
                 </li>
 
-                <li class="minibutton">
-                    <a href="${urlFor('edit?path=' + page.urlPath)}"
-                       class="action-edit-page">Edit Page</a>
-                </li>
+                <#if hasPermission(userPrincipal, 'page:create')>
+                    <li class="minibutton">
+                        <a href="${urlFor('edit?path=' + page.urlPath)}"
+                           class="action-edit-page">Edit Page</a>
+                    </li>
+                </#if>
+
                 <li class="minibutton">
                     <a href="${urlFor('history?path=' + page.urlPath)}"
                        class="action-page-history">Page History</a>

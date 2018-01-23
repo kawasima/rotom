@@ -13,12 +13,16 @@
             <li class="minibutton">
                 <a href="${urlFor('pages?path=')}" class="action-all-pages">All</a>
             </li>
-            <li class="minibutton jaws">
-                <a href="#" id="minibutton-new-page">New</a>
-            </li>
-            <li class="minibutton">
-                <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit</a>
-            </li>
+            <#if hasPermission(userPrincipal, 'page:create')>
+                <li class="minibutton jaws">
+                    <a href="#" id="minibutton-new-page">New</a>
+                </li>
+            </#if>
+            <#if hasPermission(userPrincipal, 'page:edit')>
+                <li class="minibutton">
+                    <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit</a>
+                </li>
+            </#if>
             <li class="minibutton">
                 <a href="${urlFor('history?path=' + page.urlPath)}" class="action-edit-page">History</a>
             </li>
@@ -38,6 +42,13 @@
     </div>
     <div id="footer">
         <p id="last-edit">Last edited by <b>${page.committer.name}</b>, <span class="time-elapsed" title="">${(page.modifiedTime * 1000)?number_to_datetime}</span></p>
+        <#if hasPermission(userPrincipal, 'page:delete')>
+            <p>
+                <form method="post" action="${urlFor('delete?path=' + page.urlPath)}">
+                    <a id="delete-link"  href="${urlFor('delete?path=' + page.urlPath)}" data-confirm="Are you sure you want to delete this page?"><span>Delete this Page</span></a>
+                </form>
+            </p>
+        </#if>
     </div>
 </div>
 

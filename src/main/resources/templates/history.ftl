@@ -9,9 +9,11 @@
                 <li class="minibutton">
                     <a href="${urlFor('showPageOrFile?path=' + page.urlPath)}" class="action-view-page">View Page</a>
                 </li>
-                <li class="minibutton">
-                    <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit Page</a>
-                </li>
+                <#if hasPermission(userPrincipal, 'page:edit')>
+                    <li class="minibutton">
+                        <a href="${urlFor('edit?path=' + page.urlPath)}" class="action-edit-page">Edit Page</a>
+                    </li>
+                </#if>
             </ul>
         </div>
         <div id="wiki-history">

@@ -177,9 +177,7 @@ public class Wiki extends SystemComponent {
     public void deletePage(Page page, Commit commit) {
         Committer committer = new Committer(git.getRepository());
         try {
-            git.rm()
-                    .addFilepattern(page.getPath())
-                    .call();
+            committer.rm(page.getPath());
             committer.commit(commit);
         } catch (GitAPIException e) {
 

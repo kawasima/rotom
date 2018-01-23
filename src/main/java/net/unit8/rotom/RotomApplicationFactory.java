@@ -5,8 +5,11 @@ import enkan.application.WebApplication;
 import enkan.config.ApplicationFactory;
 import enkan.endpoint.ResourceEndpoint;
 import enkan.middleware.*;
+import enkan.predicate.EnvPredicate;
+import enkan.security.bouncr.AuthorizeControllerMethodMiddleware;
 import enkan.security.bouncr.BouncrBackend;
 import enkan.system.inject.ComponentInjector;
+import enkan.util.Predicates;
 import kotowari.middleware.*;
 import kotowari.routing.Routes;
 import net.unit8.rotom.model.BreadCrumb;
@@ -38,6 +41,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
             r.post("/create").to(WikiController.class, "create");
             r.get("/edit/*path").to(WikiController.class, "edit");
             r.post("/edit/*dummy").to(WikiController.class, "update");
+            r.post("/delete/*path").to(WikiController.class, "delete");
             r.get("/history/*path").to(WikiController.class, "history");
             r.post("/compare/*path").to(WikiController.class, "compare");
             r.get("/compare/*path/:hash1..:hash2").to(WikiController.class, "doCompare");
@@ -64,9 +68,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                 .set(CorsMiddleware::setHeaders,
                         new HashSet<>(Arrays.asList("X-Bouncr-Credential", "Content-Type")))
                 .build());
-        BouncrBackend bouncrBackend = new BouncrBackend();
-        injector.inject(bouncrBackend);
-        app.use(new AuthenticationMiddleware<>(Collections.singletonList(bouncrBackend)));
+        app.use(new AuthenticationMiddleware<>(Collections.singletonList(configuration.getAuthBackend())));
         app.use(builder(new ResourceMiddleware())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
                 .build());
@@ -74,6 +76,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                 .set(RenderTemplateMiddleware::setUserFunctions, createTemplateFunctions())
                 .build());
         app.use(new RoutingMiddleware(routes));
+        app.use(new AuthorizeControllerMethodMiddleware());
         app.use(new FormMiddleware());
         app.use(new SerDesMiddleware());
         app.use(new ValidateBodyMiddleware<>());

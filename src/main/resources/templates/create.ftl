@@ -10,4 +10,7 @@
         </div>
     </div>
 </div>
+<script type="text/javascript">
+    var default_markup = 'markdown';
+</script>
 </@layout.layout>

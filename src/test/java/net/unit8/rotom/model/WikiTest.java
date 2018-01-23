@@ -20,6 +20,8 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 public class WikiTest {
     public Repository createNewRepository() throws IOException, GitAPIException {
         // prepare a new folder
@@ -72,6 +74,9 @@ public class WikiTest {
                 .stream()
                 .map(commit -> commit.getId() + " " + commit.getAuthorIdent() + " " + commit.getShortMessage())
                 .forEach(System.out::println);
+
+        wiki.deletePage(page, new Commit("kawasima", "kawasima1016@gmail.com", "delete"));
+        assertNull(wiki.getPage("home"));
     }
 
     @Test

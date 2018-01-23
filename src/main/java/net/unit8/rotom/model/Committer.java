@@ -3,16 +3,14 @@ package net.unit8.rotom.model;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheBuilder;
-import org.eclipse.jgit.dircache.DirCacheEditor;
-import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.dircache.*;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 import java.io.IOException;
 import java.text.MessageFormat;
@@ -27,7 +25,6 @@ public class Committer {
     }
 
     private DirCache createTemporaryIndex(final ObjectId headId, final String path, byte[] data) {
-
         final DirCache inCoreIndex = DirCache.newInCore();
         final DirCacheBuilder dcBuilder = inCoreIndex.builder();
         final ObjectInserter inserter = repository.newObjectInserter();
@@ -93,6 +90,16 @@ public class Committer {
 
     public void add(String path, byte[] data) throws IOException {
         addToIndex(path, data);
+    }
+
+    public void rm(String path) throws IOException {
+        final DirCache inCoreIndex = DirCache.newInCore();
+        final DirCacheBuilder dcBuilder = inCoreIndex.builder();
+        final DirCacheEditor editor = inCoreIndex.editor();
+        editor.add(new DirCacheEditor.DeleteTree(path));
+        editor.finish();
+
+        index = inCoreIndex;
     }
 
     public ObjectId commit(Commit commitInfo) throws GitAPIException, IOException {

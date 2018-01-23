@@ -28,7 +28,7 @@ public class RotomSystemFactory implements EnkanSystemFactory {
         try {
             Repository repository = FileRepositoryBuilder.create(new File(Env.getString("REPO_PATH", "wiki")));
             if (!repository.getDirectory().exists()) {
-                repository.create(false);
+                repository.create(true);
             }
             return repository;
         } catch (IOException e) {

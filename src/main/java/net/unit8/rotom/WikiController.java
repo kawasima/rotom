@@ -19,6 +19,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 
+import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +43,7 @@ public class WikiController {
     @Inject
     private TemplateEngine templateEngine;
 
+    @RolesAllowed("page:read")
     public HttpResponse pages(Parameters params) {
         String path = params.get("path");
         List<Page> pages = wiki.getPages(Objects.toString(path, ""));
@@ -57,6 +59,7 @@ public class WikiController {
                 SEE_OTHER);
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse search(Parameters params) {
         String query = Optional.ofNullable(params.get("q")).orElse("");
         Pagination<FoundPage> pagination = indexManager.search(query, 0, 10);
@@ -65,6 +68,7 @@ public class WikiController {
                 "pagination", pagination);
     }
 
+    @RolesAllowed("page:create")
     public HttpResponse createForm(Parameters params) {
         String path = params.get("path");
         Page page = new Page(path);
@@ -76,6 +80,7 @@ public class WikiController {
                 "format", "markdown");
     }
 
+    @RolesAllowed("page:create")
     public HttpResponse create(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
         String dir = params.get("dir");
@@ -95,6 +100,7 @@ public class WikiController {
                 SEE_OTHER);
     }
 
+    @RolesAllowed("page:edit")
     public HttpResponse edit(Parameters params) {
         String path = params.get("path");
         Page page = wiki.getPage(path);
@@ -112,6 +118,7 @@ public class WikiController {
         }
     }
 
+    @RolesAllowed("page:edit")
     public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
         String path = params.get("path");
@@ -132,6 +139,7 @@ public class WikiController {
                 SEE_OTHER);
     }
 
+    @RolesAllowed("page:delete")
     public HttpResponse delete(Parameters params, UserPermissionPrincipal principal) {
         Page page = some(params.get("path"), path -> wiki.getPage(path)).orElse(null);
         if (page != null) {
@@ -149,6 +157,7 @@ public class WikiController {
                 SEE_OTHER);
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse history(Parameters params) {
         String path = params.get("path");
         Page page = wiki.getPage(path);
@@ -164,12 +173,14 @@ public class WikiController {
         }
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse latestChanges(Parameters params) {
         List<RevCommit> versions = wiki.getVersions(OptionMap.of());
         return templateEngine.render("latestChanges",
                 "versions", versions);
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse showPageOrFile(Parameters params) {
         String path = params.get("path");
         ObjectId sha1 = some(params.get("sha1"),
@@ -187,6 +198,7 @@ public class WikiController {
         }
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse compare(Parameters params) {
         LinkedList<String> versions = Optional.ofNullable(params.getList("versions"))
                 .map(vs -> vs
@@ -208,6 +220,7 @@ public class WikiController {
         }
     }
 
+    @RolesAllowed("page:read")
     public HttpResponse doCompare(Parameters params) {
         Page page = wiki.getPage(params.get("path"));
         String diffEntries = wiki.getDiff(page, params.get("hash1"), params.get("hash2"));

@@ -87,20 +87,19 @@
             </div>
             <textarea id="gollum-editor-body"
                       data-markup-lang="${format}" name="content" class="mousetrap">${page.textData}</textarea>
+            <div></div>
             <div id="gollum-editor-edit-summary" class="singleline">
                 <label for="message" class="jaws">Edit message:</label>
                 <#if isCreatePage>
-                    <#assign message="Created ${page.name} ${format}">
+                    <#assign message="Created ${page.name} (${format})">
                 </#if>
                 <#if isEditPage>
-                    <#assign message="Updated ${page.name} ${format}">
+                    <#assign message="Updated ${page.name} (${format})">
                 </#if>
                 <input type="text" name="message" id="gollum-editor-message-field" value="${message}">
             </div>
 
-            <span class="jaws">
-                <br/>
-            </span>
+            <span class="jaws"><br/></span>
 
             <input type="submit" id="gollum-editor-submit" value="Save" title="Save current changes">
         </fieldset>
