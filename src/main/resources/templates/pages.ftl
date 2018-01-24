@@ -11,7 +11,7 @@
                        class="action-home-page">Home</a>
                 </li>
 
-                <#if hasPermission('page:create')>
+                <#if hasPermission(userPrincipal, 'page:create')>
                     <li class="minibutton jaws">
                         <a href="#" id="minibutton-new-page">New</a>
                     </li>

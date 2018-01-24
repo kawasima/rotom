@@ -106,7 +106,7 @@ public class WikiController {
         Page page = wiki.getPage(path);
         if (page == null) {
             return UrlRewriter.redirect(WikiController.class,
-                    "createForm?path=" + CodecUtils.urlEncode(path),
+                    "createForm?path=" + path,
                     SEE_OTHER);
         } else {
             return templateEngine.render("edit",
@@ -190,7 +190,7 @@ public class WikiController {
         Page page = wiki.getPage(path, sha1);
         if (page == null) {
             return UrlRewriter.redirect(WikiController.class,
-                    "createForm?path=" + CodecUtils.urlEncode(path),
+                    "createForm?path=" + path,
                     SEE_OTHER);
         } else {
             return templateEngine.render("page",

@@ -247,13 +247,7 @@ $(document).ready(function() {
           if ( res['name'] ) {
             name = res['name'];
           }
-          var name_encoded = [];
-          var name_parts = abspath(path, name).join('/').split('/');
-          // Split and encode each component individually.
-          for( var i=0; i < name_parts.length; i++ ){
-            name_encoded.push(encodeURIComponent(name_parts[i]));
-          }
-          window.location = baseUrl + name_encoded.join('/');
+          window.location = baseUrl + abspath(path, name).join('/');
         }
       });
     });
