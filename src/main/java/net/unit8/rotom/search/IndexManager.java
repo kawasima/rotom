@@ -155,7 +155,7 @@ public class IndexManager extends SystemComponent {
     public void save(Page page) {
         ZMsg msg = new ZMsg();
         msg.add("update");
-        msg.add(page.getPath());
+        msg.add(page.getDir() + "/" + page.getName());
         msg.add(page.getName());
         msg.add(page.getFormattedData());
         msg.add(String.valueOf(page.getModifiedTime()));

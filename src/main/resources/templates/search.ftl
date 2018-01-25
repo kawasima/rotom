@@ -19,7 +19,7 @@
                 <ul>
                     <#items as page>
                         <li>
-                            <a href="${urlFor('showPageOrFile?path=' + page.path)}">${page.name}</a>
+                            <a href="${urlFor('showPageOrFile?path=' + page.urlPath)}">${page.name}</a>
                             <span>${page.score}</span>
                             <div>
                                 ${page.summary?no_esc}
