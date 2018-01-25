@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
 
@@ -55,16 +56,16 @@ public class WikiTest {
         system.start();
         Wiki wiki = system.getComponent("wiki");
 
-        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
-        wiki.writePage("fuga", "markdown", "# Fuga page\n\n- a\n- b\n- c".getBytes(), null,
+        wiki.writePage("fuga", "markdown", "# Fuga page\n\n- a\n- b\n- c".getBytes(StandardCharsets.UTF_8), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
         Page page = wiki.getPage("home");
         System.out.println(page.getFormattedData());
 
-        wiki.updatePage(page, null, null, "# Home page2\n\n- a\n- b\n- c".getBytes(),
+        wiki.updatePage(page, null, null, "# Home page2\n\n- a\n- b\n- c".getBytes(StandardCharsets.UTF_8),
                 new Commit("kawasima", "kawasima1016@gmail.com", "create 2"));
 
         page = wiki.getPage("home");
@@ -97,10 +98,10 @@ public class WikiTest {
         system.start();
         Wiki wiki = system.getComponent("wiki");
 
-        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
-        wiki.writePage("a/b/test", "markdown", "# Test page\n\n- a\n- b".getBytes(), null,
+        wiki.writePage("a/b/test", "markdown", "# Test page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
         wiki.getPages("").stream()
@@ -127,11 +128,11 @@ public class WikiTest {
         system.start();
         Wiki wiki = system.getComponent("wiki");
 
-        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(), null,
+        wiki.writePage("home", "markdown", "# Home page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8), null,
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
         Page page = wiki.getPage("home");
-        wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(),
+        wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8),
                 new Commit("kawasima", "kawasima1016@gmail.com", "updated"));
         List<RevCommit> versions = wiki.getVersions(OptionMap.of("path", page.getPath()));
         wiki.getDiff(page,
