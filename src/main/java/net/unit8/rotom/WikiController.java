@@ -19,6 +19,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 
+import java.nio.charset.StandardCharsets;
 import javax.annotation.security.RolesAllowed;
 import javax.inject.Inject;
 import java.util.LinkedList;
@@ -91,7 +92,7 @@ public class WikiController {
         } else {
             committer = new PersonIdent("anonymous", "anonymous@example.com");
         }
-        wiki.writePage(name, format, params.get("content").getBytes(), dir,
+        wiki.writePage(name, format, params.get("content").getBytes(StandardCharsets.UTF_8), dir,
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
         Page page = wiki.getPage(Wiki.fullpath(dir, name));
         indexManager.save(page);
@@ -130,7 +131,7 @@ public class WikiController {
             committer = new PersonIdent("anonymous", "anonymous@example.com");
         }
         Page page = wiki.getPage(Wiki.fullpath(path, name));
-        wiki.updatePage(page, null, null, params.get("content").getBytes(),
+        wiki.updatePage(page, null, null, params.get("content").getBytes(StandardCharsets.UTF_8),
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
         page = wiki.getPage(Wiki.fullpath(path, name));
         indexManager.save(page);
