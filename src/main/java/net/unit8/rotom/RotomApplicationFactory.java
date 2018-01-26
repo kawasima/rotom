@@ -68,7 +68,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                 .set(CorsMiddleware::setHeaders,
                         new HashSet<>(Arrays.asList("X-Bouncr-Credential", "Content-Type")))
                 .build());
-        app.use(new AuthenticationMiddleware<>(Collections.singletonList(configuration.getAuthBackend())));
+        app.use(new AuthenticationMiddleware<>(Collections.singletonList(injector.inject(configuration.getAuthBackend()))));
         app.use(builder(new ResourceMiddleware())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
                 .build());
