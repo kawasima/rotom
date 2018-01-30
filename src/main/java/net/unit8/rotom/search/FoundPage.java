@@ -32,6 +32,10 @@ public class FoundPage implements Serializable {
     }
 
     public String getUrlPath() {
-        return path + "/" + name;
+        if (path.startsWith("/")) {
+            return path.substring(1);
+        } else {
+            return path;
+        }
     }
 }
