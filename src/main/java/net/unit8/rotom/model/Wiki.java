@@ -19,6 +19,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 
 import java.io.*;
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 
 import static enkan.util.ThreadingUtils.some;
 
@@ -218,7 +219,7 @@ public class Wiki extends SystemComponent {
                         formatter.format(entry);
                     }
                 }
-                return new String(baos.toByteArray());
+                return new String(baos.toByteArray(), StandardCharsets.UTF_8);
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
