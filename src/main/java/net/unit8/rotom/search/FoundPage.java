@@ -30,4 +30,8 @@ public class FoundPage implements Serializable {
     public double getScore() {
         return score;
     }
+
+    public String getUrlPath() {
+        return path + "/" + name;
+    }
 }
