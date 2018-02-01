@@ -5,11 +5,8 @@ import enkan.application.WebApplication;
 import enkan.config.ApplicationFactory;
 import enkan.endpoint.ResourceEndpoint;
 import enkan.middleware.*;
-import enkan.predicate.EnvPredicate;
 import enkan.security.bouncr.AuthorizeControllerMethodMiddleware;
-import enkan.security.bouncr.BouncrBackend;
 import enkan.system.inject.ComponentInjector;
-import enkan.util.Predicates;
 import kotowari.middleware.*;
 import kotowari.routing.Routes;
 import net.unit8.rotom.model.BreadCrumb;
@@ -19,7 +16,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static enkan.util.BeanBuilder.builder;
-import static enkan.util.Predicates.NONE;
+import static enkan.util.Predicates.*;
 
 public class RotomApplicationFactory implements ApplicationFactory {
     @Inject
@@ -69,6 +66,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                         new HashSet<>(Arrays.asList("X-Bouncr-Credential", "Content-Type")))
                 .build());
         app.use(new AuthenticationMiddleware<>(Collections.singletonList(injector.inject(configuration.getAuthBackend()))));
+        app.use(and(path("^(" + configuration.getBasePath() + ")($|/.*)"), authenticated().negate()), configuration.getUnauthEndpoint());
         app.use(builder(new ResourceMiddleware())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
                 .build());
@@ -100,7 +98,7 @@ public class RotomApplicationFactory implements ApplicationFactory {
                         breadcrumbs.add(new BreadCrumb(title, crumb.replaceFirst("\\.\\w+$", "")));
                     }
                     crumb = crumb.replaceFirst("(^|/)[^/]*$", "");
-                } while(!crumb.isEmpty());
+                } while (!crumb.isEmpty());
                 breadcrumbs.add(new BreadCrumb("Home", ""));
                 Collections.reverse(breadcrumbs);
             }
