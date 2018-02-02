@@ -12,8 +12,8 @@
                 </li>
 
                 <#if hasPermission(userPrincipal, 'page:create')>
-                    <li class="minibutton jaws">
-                        <a href="#" id="minibutton-new-page">New</a>
+                    <li class="minibutton">
+                        <a href="${urlFor('create')}/">New</a>
                     </li>
                 </#if>
             </ul>
