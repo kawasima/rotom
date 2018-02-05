@@ -65,7 +65,7 @@ public class WikiTest {
         Page page = wiki.getPage("home");
         System.out.println(page.getFormattedData());
 
-        wiki.updatePage(page, "# Home page2\n\n- a\n- b\n- c".getBytes(StandardCharsets.UTF_8),
+        wiki.updatePage(page, null, null, "# Home page2\n\n- a\n- b\n- c".getBytes(StandardCharsets.UTF_8),
                 new Commit("kawasima", "kawasima1016@gmail.com", "create 2"));
 
         page = wiki.getPage("home");
@@ -132,7 +132,7 @@ public class WikiTest {
                 new Commit("kawasima", "kawasima1016@gmail.com", "init"));
 
         Page page = wiki.getPage("home");
-        wiki.updatePage(page, "# Test page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8),
+        wiki.updatePage(page, null, null, "# Test page\n\n- a\n- b".getBytes(StandardCharsets.UTF_8),
                 new Commit("kawasima", "kawasima1016@gmail.com", "updated"));
         List<RevCommit> versions = wiki.getVersions(OptionMap.of("path", page.getPath()));
         wiki.getDiff(page,
