@@ -76,8 +76,6 @@ public class Committer {
     }
 
     public void addToIndex(String dir, String name, String format, byte[] data) throws IOException {
-        dir = dir.replace(' ', '-');
-        name = name.replace(' ', '-');
         name = name + "." +
                 MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
         addToIndex(Wiki.fullpath(dir, name), data);
