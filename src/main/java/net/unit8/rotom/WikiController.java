@@ -131,7 +131,7 @@ public class WikiController {
             committer = new PersonIdent("anonymous", "anonymous@example.com");
         }
         Page page = wiki.getPage(Wiki.fullpath(path, name));
-        wiki.updatePage(page, params.get("content").getBytes(StandardCharsets.UTF_8),
+        wiki.updatePage(page, null, null, params.get("content").getBytes(StandardCharsets.UTF_8),
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
         page = wiki.getPage(Wiki.fullpath(path, name));
         indexManager.save(page);

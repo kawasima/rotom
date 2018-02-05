@@ -158,7 +158,11 @@ public class Wiki extends SystemComponent {
         }
     }
 
-    public void updatePage(Page page, byte[] data, Commit commit) {
+    public void updatePage(Page page, String name, String format, byte[] data, Commit commit) {
+        if (name == null) name = page.getName();
+        if (format == null) format = page.getFormat();
+
+        boolean rename = !Objects.equals(name, page.getName());
         Committer committer = new Committer(git.getRepository());
 
         try {
