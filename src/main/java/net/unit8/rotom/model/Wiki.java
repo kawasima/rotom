@@ -38,6 +38,10 @@ public class Wiki extends SystemComponent {
         }
     }
 
+    private static String sanitize(String raw) {
+        return some(raw, str -> str.replace(' ', '-')).orElse("");
+    }
+
     private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
         TreeWalk treeWalk = TreeWalk.forPath(git.getRepository(), path, tree);
         if(treeWalk == null) {
@@ -244,10 +248,6 @@ public class Wiki extends SystemComponent {
 
             return treeParser;
         }
-    }
-
-    private String sanitize(String raw) {
-        return some(raw, str -> str.replace(' ', '-')).orElse("");
     }
 
     @Override
