@@ -93,13 +93,8 @@ public class Committer {
     }
 
     public void rm(String path) throws IOException {
-        final DirCache inCoreIndex = DirCache.newInCore();
-        final DirCacheBuilder dcBuilder = inCoreIndex.builder();
-        final DirCacheEditor editor = inCoreIndex.editor();
-        editor.add(new DirCacheEditor.DeleteTree(path));
-        editor.finish();
-
-        index = inCoreIndex;
+        final ObjectId headId = repository.resolve("master^{commit}");
+        index = createTemporaryIndex(headId, path, null);
     }
 
     public ObjectId commit(Commit commitInfo) throws GitAPIException, IOException {
