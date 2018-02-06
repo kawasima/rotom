@@ -10,10 +10,9 @@
             <#if isCreatePage>
                 <div id="gollum-editor-title-field" class="singleline">
                     <label for="page" class="jaws">Page Title</label>
-                    <input type="text" name="page" id="gollum-editor-page-title" value="${page.name}">
-                    <#if (page.dir)?has_content>
-                        <p class="path_note"><strong>NOTE:</strong> This page will be created within the &quot;<strong>${page.dir}</strong>&quot; directory</p>
-                    </#if>
+                    <input type="text" name="page" id="gollum-editor-page-title" value="${page.name}"
+                        pattern="^(?!/)[^&quot;<>*:?\\|]+$" title="You can use characters except : &quot; < > * : ? \ |" required autofocus>
+                    <p class="path_note"><strong>NOTE:</strong>You can use characters except : <strong>&quot; < > * : ? \ |</strong></p>
                 </div>
             </#if>
             <#if isEditPage>

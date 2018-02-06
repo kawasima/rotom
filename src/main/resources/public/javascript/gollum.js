@@ -209,50 +209,6 @@ $(document).ready(function() {
     });
   }
 
-  if ($('#minibutton-new-page').length) {
-    $('#minibutton-new-page').parent().removeClass('jaws');
-    $('#minibutton-new-page').click(function(e) {
-      e.preventDefault();
-
-      var path = pagePath();
-      if( path === undefined && $('#file-browser').length != 0 ){
-        // In the pages view, pageFullPath isn't defined.
-        // The new button will still expect a value however.
-        // So we try to figure one out from window.location
-        path = baseUrl == '' ? window.location.pathname.substr(1)
-                             : window.location.pathname.substr(baseUrl.length + 1);
-        // Remove the page viewer part of the url.
-        path = path.replace(/^pages\/?/,'')
-        // For consistency remove the trailing /
-        path = path.replace(/\/$/,'')
-      }
-      var context_blurb =
-        "Page will be created under " +
-        "<span class='path'>" + htmlEscape('/' + path) + "</span>" +
-        " unless an absolute path is given."
-
-      $.GollumDialog.init({
-        title: 'Create New Page',
-        fields: [
-          {
-            id:   'name',
-            name: 'Page Name',
-            type: 'text',
-            defaultValue: '',
-            context: context_blurb
-          }
-        ],
-        OK: function( res ) {
-          var name = 'New Page';
-          if ( res['name'] ) {
-            name = res['name'];
-          }
-          window.location = baseUrl + abspath(path, name).join('/');
-        }
-      });
-    });
-  }
-
   if ($('#wiki-wrapper').hasClass('history')) {
     $('#wiki-history td.checkbox input').each(function() {
       $(this).click(function() {
