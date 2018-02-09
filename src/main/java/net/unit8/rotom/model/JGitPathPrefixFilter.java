@@ -56,6 +56,7 @@ public class JGitPathPrefixFilter extends TreeFilter {
         }
 
         // File name match
+        if (idx != pathRaw.length) return false;
         for (int i=0; i<idx; i++) {
             if (currentRow[i] != pathRaw[i])
                 return false;
