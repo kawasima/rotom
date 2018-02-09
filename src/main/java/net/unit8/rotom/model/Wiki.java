@@ -20,6 +20,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import java.io.*;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import static enkan.util.ThreadingUtils.some;
 
@@ -36,6 +37,11 @@ public class Wiki extends SystemComponent {
         } else {
             return dir.replaceFirst("/+$", "") + "/" + name;
         }
+    }
+
+    public static String addExtension(String name, String format) {
+        return name + "." +
+                MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
     }
 
     private static String sanitize(String raw) {
@@ -153,7 +159,7 @@ public class Wiki extends SystemComponent {
 
         Committer committer = new Committer(git.getRepository());
         try {
-            committer.addToIndex(sanitizedDir, sanitizedName, format, data);
+            committer.add(fullpath(sanitizedDir, addExtension(sanitizedName, format)), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
@@ -162,15 +168,21 @@ public class Wiki extends SystemComponent {
         }
     }
 
-    public void updatePage(Page page, String name, String format, byte[] data, Commit commit) {
+    public void updatePage(Page page, String dir, String name, String format, byte[] data, Commit commit) {
+        if (dir == null) dir = page.getDir();
         if (name == null) name = page.getName();
         if (format == null) format = page.getFormat();
 
-        boolean rename = !Objects.equals(name, page.getName());
+        String path = fullpath(sanitize(dir), addExtension(sanitize(name), format));
+        boolean rename = !Objects.equals(path, page.getPath()) ;
         Committer committer = new Committer(git.getRepository());
 
         try {
-            committer.add(page.getPath(), data);
+            if (rename) {
+                committer.update(page.getPath(), fullpath(page.getDir(), addExtension(name, format)), data);
+            } else {
+                committer.add(page.getPath(), data);
+            }
             committer.commit(commit);
         } catch (GitAPIException e) {
 

@@ -14,7 +14,6 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.Locale;
 
 public class Committer {
     private Repository repository;
@@ -24,22 +23,11 @@ public class Committer {
         this.repository = repository;
     }
 
-    private DirCache createTemporaryIndex(final ObjectId headId, final String path, byte[] data) {
-        final DirCache inCoreIndex = DirCache.newInCore();
-        final DirCacheBuilder dcBuilder = inCoreIndex.builder();
-        final ObjectInserter inserter = repository.newObjectInserter();
+    private DirCacheBuilder createTemporaryIndex(final ObjectId headId, final String path) {
+        index = DirCache.newInCore();
+        final DirCacheBuilder dcBuilder = index.builder();
 
         try {
-            if (data != null) {
-                final DirCacheEntry dcEntry = new DirCacheEntry(path);
-                dcEntry.setLength(data.length);
-                dcEntry.setLastModified(System.currentTimeMillis());
-                dcEntry.setFileMode(FileMode.REGULAR_FILE);
-                dcEntry.setObjectId(inserter.insert(Constants.OBJ_BLOB, data));
-
-                dcBuilder.add(dcEntry);
-            }
-
             if (headId != null) {
                 final TreeWalk treeWalk = new TreeWalk(repository);
                 final int hIdx = treeWalk.addTree(new RevWalk(repository).parseTree(headId));
@@ -58,41 +46,48 @@ public class Committer {
                 }
                 treeWalk.close();
             }
-
-            dcBuilder.finish();
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            inserter.close();
         }
-
-        if (data == null) {
-            final DirCacheEditor editor = inCoreIndex.editor();
-            editor.add(new DirCacheEditor.DeleteTree(path));
-            editor.finish();
-        }
-
-        return inCoreIndex;
+        return dcBuilder;
     }
 
-    public void addToIndex(String dir, String name, String format, byte[] data) throws IOException {
-        name = name + "." +
-                MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
-        addToIndex(Wiki.fullpath(dir, name), data);
-    }
-
-    public void addToIndex(String path, byte[] data) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
-        index = createTemporaryIndex(headId, path, data);
+    private void addToIndex(DirCacheBuilder dcBuilder, final String path, byte[] data) {
+        if (data != null) {
+            final ObjectInserter inserter = repository.newObjectInserter();
+            try {
+                final DirCacheEntry dcEntry = new DirCacheEntry(path);
+                dcEntry.setLength(data.length);
+                dcEntry.setLastModified(System.currentTimeMillis());
+                dcEntry.setFileMode(FileMode.REGULAR_FILE);
+                dcEntry.setObjectId(inserter.insert(Constants.OBJ_BLOB, data));
+                dcBuilder.add(dcEntry);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                inserter.close();
+            }
+        }
     }
 
     public void add(String path, byte[] data) throws IOException {
-        addToIndex(path, data);
+        final ObjectId headId = repository.resolve("master^{commit}");
+        DirCacheBuilder dcBuilder = createTemporaryIndex(headId, path);
+        addToIndex(dcBuilder, path, data);
+        dcBuilder.finish();
     }
 
     public void rm(String path) throws IOException {
         final ObjectId headId = repository.resolve("master^{commit}");
-        index = createTemporaryIndex(headId, path, null);
+        DirCacheBuilder dcBuilder = createTemporaryIndex(headId, path);
+        dcBuilder.finish();
+    }
+
+    public void update(String oldPath, String newPath, byte[] data) throws IOException {
+        final ObjectId headId = repository.resolve("master^{commit}");
+        DirCacheBuilder dcBuilder = createTemporaryIndex(headId, oldPath);
+        addToIndex(dcBuilder, newPath, data);
+        dcBuilder.finish();
     }
 
     public ObjectId commit(Commit commitInfo) throws GitAPIException, IOException {
