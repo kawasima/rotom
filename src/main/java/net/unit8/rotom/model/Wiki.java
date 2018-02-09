@@ -38,6 +38,10 @@ public class Wiki extends SystemComponent {
         }
     }
 
+    private static String sanitize(String raw) {
+        return some(raw, str -> str.replace(' ', '-')).orElse("");
+    }
+
     private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
         TreeWalk treeWalk = TreeWalk.forPath(git.getRepository(), path, tree);
         if(treeWalk == null) {
@@ -48,6 +52,7 @@ public class Wiki extends SystemComponent {
 
     public List<Page> getPages(String path) {
         try {
+            String sanitizedPath = sanitize(path);
             List<Page> pages = new ArrayList<>();
             Ref head = git.getRepository().exactRef("refs/heads/master");
             if (head == null) return Collections.emptyList();
@@ -57,7 +62,7 @@ public class Wiki extends SystemComponent {
                 tree = commit.getTree();
             }
 
-            if (path.isEmpty()) {
+            if (sanitizedPath.isEmpty()) {
                 try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(false);
@@ -72,7 +77,7 @@ public class Wiki extends SystemComponent {
                     }
                 }
             } else {
-                try (TreeWalk treeWalk = buildTreeWalk(tree, path)) {
+                try (TreeWalk treeWalk = buildTreeWalk(tree, sanitizedPath)) {
                     if ((treeWalk.getFileMode(0).getBits() & FileMode.TYPE_TREE) == 0) {
                         throw new IllegalStateException(
                                 "Tried to read the elements of a non-tree for commit '" + head.getObjectId() + "' and path '" + path + "', had filemode " + treeWalk.getFileMode(0).getBits());
@@ -86,7 +91,7 @@ public class Wiki extends SystemComponent {
                             if (dirWalk.getFileMode() == FileMode.TREE) {
                                 p = p + "/";
                             }
-                            pages.add(new Page(Wiki.fullpath(path, p)));
+                            pages.add(new Page(Wiki.fullpath(sanitizedPath, p)));
                         }
                     }
                 }
@@ -115,7 +120,7 @@ public class Wiki extends SystemComponent {
                 try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(true);
-                    treeWalk.setFilter(JGitPathPrefixFilter.create(name));
+                    treeWalk.setFilter(JGitPathPrefixFilter.create(sanitize(name)));
                     if (!treeWalk.next()) {
                         // Not found
                         return null;
@@ -143,9 +148,8 @@ public class Wiki extends SystemComponent {
     }
 
     public void writePage(String name, String format, byte[] data, String dir, Commit commit) {
-        if (dir == null) dir = "";
-        String sanitizedName = name.replace(' ', '-');
-        String sanitizedDir  = dir.replace(' ', '-');
+        String sanitizedName = sanitize(name);
+        String sanitizedDir  = sanitize(dir);
 
         Committer committer = new Committer(git.getRepository());
         try {
@@ -245,7 +249,6 @@ public class Wiki extends SystemComponent {
             return treeParser;
         }
     }
-
 
     @Override
     protected ComponentLifecycle lifecycle() {
