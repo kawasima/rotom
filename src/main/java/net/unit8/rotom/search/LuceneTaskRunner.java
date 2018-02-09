@@ -32,7 +32,7 @@ public class LuceneTaskRunner implements ZThread.IAttachedRunnable{
                     break;
                 case "update":
                     update(writer,
-                        /* path */msg.pop().getString(ZMQ.CHARSET),
+                        /* urlPath */msg.pop().getString(ZMQ.CHARSET),
                         /* name */msg.pop().getString(ZMQ.CHARSET),
                         /* data */msg.pop().getString(ZMQ.CHARSET),
                         /* modified*/msg.popString());
@@ -45,8 +45,8 @@ public class LuceneTaskRunner implements ZThread.IAttachedRunnable{
         }
     }
 
-    public void update(IndexWriter writer, String path, String name, String data, String modified) {
-        Term term = new Term("path", path);
+    public void update(IndexWriter writer, String urlPath, String name, String data, String modified) {
+        Term term = new Term("urlPath", urlPath);
         Document doc = new Document();
 
         try {
@@ -55,7 +55,7 @@ public class LuceneTaskRunner implements ZThread.IAttachedRunnable{
                     reader.lines().collect(Collectors.joining("\n")),
                     TextField.TYPE_STORED));
             }
-            doc.add(new StringField("path", path, Field.Store.YES));
+            doc.add(new StringField("urlPath", urlPath, Field.Store.YES));
             doc.add(new TextField("name", name, Field.Store.YES));
             doc.add(new LongPoint("modified", Long.valueOf(modified)));
             writer.updateDocument(term, doc);
