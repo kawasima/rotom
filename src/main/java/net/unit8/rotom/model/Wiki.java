@@ -157,7 +157,7 @@ public class Wiki extends SystemComponent {
         String sanitizedName = sanitize(name);
         String sanitizedDir  = sanitize(dir);
 
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
             committer.add(fullpath(sanitizedDir, addExtension(sanitizedName, format)), data);
             committer.commit(commit);
@@ -175,11 +175,11 @@ public class Wiki extends SystemComponent {
 
         String path = fullpath(sanitize(dir), addExtension(sanitize(name), format));
         boolean rename = !Objects.equals(path, page.getPath()) ;
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
 
         try {
             if (rename) {
-                committer.update(page.getPath(), fullpath(page.getDir(), addExtension(name, format)), data);
+                committer.rmAndAdd(page.getPath(), fullpath(page.getDir(), addExtension(name, format)), data);
             } else {
                 committer.add(page.getPath(), data);
             }
@@ -192,7 +192,7 @@ public class Wiki extends SystemComponent {
     }
 
     public void deletePage(Page page, Commit commit) {
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
             committer.rm(page.getPath());
             committer.commit(commit);

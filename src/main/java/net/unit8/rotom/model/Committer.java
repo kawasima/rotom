@@ -18,9 +18,11 @@ import java.text.MessageFormat;
 public class Committer {
     private Repository repository;
     private DirCache index;
+    private String ref;
 
-    public Committer(Repository repository) {
+    public Committer(Repository repository, String ref) {
         this.repository = repository;
+        this.ref = ref;
     }
 
     private DirCacheBuilder createTemporaryIndex(final ObjectId headId, final String path) {
@@ -71,20 +73,20 @@ public class Committer {
     }
 
     public void add(String path, byte[] data) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
+        final ObjectId headId = repository.resolve(ref + "^{commit}");
         DirCacheBuilder dcBuilder = createTemporaryIndex(headId, path);
         addToIndex(dcBuilder, path, data);
         dcBuilder.finish();
     }
 
     public void rm(String path) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
+        final ObjectId headId = repository.resolve(ref + "^{commit}");
         DirCacheBuilder dcBuilder = createTemporaryIndex(headId, path);
         dcBuilder.finish();
     }
 
-    public void update(String oldPath, String newPath, byte[] data) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
+    public void rmAndAdd(String oldPath, String newPath, byte[] data) throws IOException {
+        final ObjectId headId = repository.resolve(ref + "^{commit}");
         DirCacheBuilder dcBuilder = createTemporaryIndex(headId, oldPath);
         addToIndex(dcBuilder, newPath, data);
         dcBuilder.finish();
