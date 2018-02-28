@@ -47,36 +47,36 @@ public class RotomApplicationFactory implements ApplicationFactory {
             r.get("/*path").to(WikiController.class, "showPageOrFile");
         })).compile();
 
-        app.use(new DefaultCharsetMiddleware());
+        app.use(new DefaultCharsetMiddleware<>());
         app.use(NONE, new ServiceUnavailableMiddleware<>(new ResourceEndpoint("/public/html/503.html")));
-        app.use(new ContentTypeMiddleware());
-        app.use(new ParamsMiddleware());
-        app.use(new MultipartParamsMiddleware());
-        app.use(new MethodOverrideMiddleware());
-        app.use(new NormalizationMiddleware());
-        app.use(new NestedParamsMiddleware());
-        app.use(new CookiesMiddleware());
+        app.use(new ContentTypeMiddleware<>());
+        app.use(new ParamsMiddleware<>());
+        app.use(new MultipartParamsMiddleware<>());
+        app.use(new MethodOverrideMiddleware<>());
+        app.use(new NormalizationMiddleware<>());
+        app.use(new NestedParamsMiddleware<>());
+        app.use(new CookiesMiddleware<>());
 
-        app.use(builder(new ContentNegotiationMiddleware())
+        app.use(builder(new ContentNegotiationMiddleware<>())
                 .set(ContentNegotiationMiddleware::setAllowedLanguages,
                         new HashSet<>(Arrays.asList("en", "ja")))
                 .build());
-        app.use(builder(new CorsMiddleware())
+        app.use(builder(new CorsMiddleware<>())
                 .set(CorsMiddleware::setHeaders,
                         new HashSet<>(Arrays.asList("X-Bouncr-Credential", "Content-Type")))
                 .build());
         app.use(new AuthenticationMiddleware<>(Collections.singletonList(injector.inject(configuration.getAuthBackend()))));
         app.use(and(path("^(" + configuration.getBasePath() + ")($|/.*)"), authenticated().negate()), configuration.getUnauthEndpoint());
-        app.use(builder(new ResourceMiddleware())
+        app.use(builder(new ResourceMiddleware<>())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
                 .build());
-        app.use(builder(new RenderTemplateMiddleware())
+        app.use(builder(new RenderTemplateMiddleware<>())
                 .set(RenderTemplateMiddleware::setUserFunctions, createTemplateFunctions())
                 .build());
-        app.use(new RoutingMiddleware(routes));
+        app.use(new RoutingMiddleware<>(routes));
         app.use(new AuthorizeControllerMethodMiddleware());
-        app.use(new FormMiddleware());
-        app.use(new SerDesMiddleware());
+        app.use(new FormMiddleware<>());
+        app.use(new SerDesMiddleware<>());
         app.use(new ValidateBodyMiddleware<>());
         app.use(new ControllerInvokerMiddleware<>(injector));
 
