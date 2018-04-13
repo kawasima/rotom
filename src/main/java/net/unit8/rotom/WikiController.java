@@ -122,18 +122,18 @@ public class WikiController {
     @RolesAllowed("page:edit")
     public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
-        String path = params.get("path");
-        String format = params.get("format");
+        String dir = params.get("dir");
         PersonIdent committer;
         if (principal != null) {
             committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
         } else {
             committer = new PersonIdent("anonymous", "anonymous@example.com");
         }
-        Page page = wiki.getPage(Wiki.fullpath(path, name));
-        wiki.updatePage(page, null, null, params.get("content").getBytes(StandardCharsets.UTF_8),
+        Page page = wiki.getPage(params.get("path"));
+        wiki.updatePage(page, dir, name, params.get("format"),
+                params.get("content").getBytes(StandardCharsets.UTF_8),
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
-        page = wiki.getPage(Wiki.fullpath(path, name));
+        page = wiki.getPage(Wiki.fullpath(dir, name));
         indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + page.getUrlPath(),

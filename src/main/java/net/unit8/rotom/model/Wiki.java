@@ -20,6 +20,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter;
 import java.io.*;
 import java.util.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 import static enkan.util.ThreadingUtils.some;
 
@@ -38,6 +39,15 @@ public class Wiki extends SystemComponent {
         }
     }
 
+    public static String addExtension(String name, String format) {
+        return name + "." +
+                MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();
+    }
+
+    private static String sanitize(String raw) {
+        return some(raw, str -> str.replace(' ', '-')).orElse("");
+    }
+
     private TreeWalk buildTreeWalk(RevTree tree, final String path) throws IOException {
         TreeWalk treeWalk = TreeWalk.forPath(git.getRepository(), path, tree);
         if(treeWalk == null) {
@@ -48,6 +58,7 @@ public class Wiki extends SystemComponent {
 
     public List<Page> getPages(String path) {
         try {
+            String sanitizedPath = sanitize(path);
             List<Page> pages = new ArrayList<>();
             Ref head = git.getRepository().exactRef("refs/heads/master");
             if (head == null) return Collections.emptyList();
@@ -57,7 +68,7 @@ public class Wiki extends SystemComponent {
                 tree = commit.getTree();
             }
 
-            if (path.isEmpty()) {
+            if (sanitizedPath.isEmpty()) {
                 try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(false);
@@ -72,7 +83,7 @@ public class Wiki extends SystemComponent {
                     }
                 }
             } else {
-                try (TreeWalk treeWalk = buildTreeWalk(tree, path)) {
+                try (TreeWalk treeWalk = buildTreeWalk(tree, sanitizedPath)) {
                     if ((treeWalk.getFileMode(0).getBits() & FileMode.TYPE_TREE) == 0) {
                         throw new IllegalStateException(
                                 "Tried to read the elements of a non-tree for commit '" + head.getObjectId() + "' and path '" + path + "', had filemode " + treeWalk.getFileMode(0).getBits());
@@ -86,7 +97,7 @@ public class Wiki extends SystemComponent {
                             if (dirWalk.getFileMode() == FileMode.TREE) {
                                 p = p + "/";
                             }
-                            pages.add(new Page(Wiki.fullpath(path, p)));
+                            pages.add(new Page(Wiki.fullpath(sanitizedPath, p)));
                         }
                     }
                 }
@@ -115,7 +126,7 @@ public class Wiki extends SystemComponent {
                 try (TreeWalk treeWalk = new TreeWalk(git.getRepository())) {
                     treeWalk.addTree(tree);
                     treeWalk.setRecursive(true);
-                    treeWalk.setFilter(JGitPathPrefixFilter.create(name));
+                    treeWalk.setFilter(JGitPathPrefixFilter.create(sanitize(name)));
                     if (!treeWalk.next()) {
                         // Not found
                         return null;
@@ -143,13 +154,12 @@ public class Wiki extends SystemComponent {
     }
 
     public void writePage(String name, String format, byte[] data, String dir, Commit commit) {
-        if (dir == null) dir = "";
-        String sanitizedName = name.replace(' ', '-');
-        String sanitizedDir  = dir.replace(' ', '-');
+        String sanitizedName = sanitize(name);
+        String sanitizedDir  = sanitize(dir);
 
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
-            committer.addToIndex(sanitizedDir, sanitizedName, format, data);
+            committer.add(fullpath(sanitizedDir, addExtension(sanitizedName, format)), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
@@ -158,15 +168,21 @@ public class Wiki extends SystemComponent {
         }
     }
 
-    public void updatePage(Page page, String name, String format, byte[] data, Commit commit) {
+    public void updatePage(Page page, String dir, String name, String format, byte[] data, Commit commit) {
+        if (dir == null) dir = page.getDir();
         if (name == null) name = page.getName();
         if (format == null) format = page.getFormat();
 
-        boolean rename = !Objects.equals(name, page.getName());
-        Committer committer = new Committer(git.getRepository());
+        String path = fullpath(sanitize(dir), addExtension(sanitize(name), format));
+        boolean rename = !Objects.equals(path, page.getPath()) ;
+        Committer committer = new Committer(git.getRepository(), ref);
 
         try {
-            committer.add(page.getPath(), data);
+            if (rename) {
+                committer.rmAndAdd(page.getPath(), fullpath(page.getDir(), addExtension(name, format)), data);
+            } else {
+                committer.add(page.getPath(), data);
+            }
             committer.commit(commit);
         } catch (GitAPIException e) {
 
@@ -176,7 +192,7 @@ public class Wiki extends SystemComponent {
     }
 
     public void deletePage(Page page, Commit commit) {
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
             committer.rm(page.getPath());
             committer.commit(commit);
@@ -245,7 +261,6 @@ public class Wiki extends SystemComponent {
             return treeParser;
         }
     }
-
 
     @Override
     protected ComponentLifecycle lifecycle() {
