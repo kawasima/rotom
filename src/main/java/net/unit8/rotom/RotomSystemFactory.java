@@ -6,7 +6,6 @@ import enkan.component.builtin.HmacEncoder;
 import enkan.component.freemarker.FreemarkerTemplateEngine;
 import enkan.component.jackson.JacksonBeansConverter;
 import enkan.component.jetty.JettyComponent;
-import enkan.component.metrics.MetricsComponent;
 import enkan.config.EnkanSystemFactory;
 import enkan.system.EnkanSystem;
 import net.unit8.bouncr.sign.JsonWebToken;
@@ -42,7 +41,6 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                 "hmac", new HmacEncoder(),
                 "jackson", new JacksonBeansConverter(),
                 "template", new FreemarkerTemplateEngine(),
-                "metrics", new MetricsComponent(),
                 "wiki", builder(new Wiki())
                         .set(Wiki::setRepository, getRepository())
                         .build(),
@@ -53,14 +51,14 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                         .set(RotomConfiguration::setBasePath, Env.getString("BASE_PATH", ""))
                         .build(),
                 "jwt", new JsonWebToken(),
-                "app", new ApplicationComponent("net.unit8.rotom.RotomApplicationFactory"),
+                "app", new ApplicationComponent<>("net.unit8.rotom.RotomApplicationFactory"),
                 "http", builder(new JettyComponent())
                         .set(JettyComponent::setPort, Env.getInt("PORT", 3000))
                         .build()
         ).relationships(
                 component("http").using("app"),
                 component("app").using(
-                        "config", "template", "jackson", "metrics", "jwt", "wiki", "index")
+                        "config", "template", "jackson", "jwt", "wiki", "index")
         );
     }
 }

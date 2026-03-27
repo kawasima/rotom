@@ -13,19 +13,17 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class LuceneTest {
     @Test
     public void test() throws Exception {
-        Directory directory = new RAMDirectory();
+        Directory directory = new ByteBuffersDirectory();
         IndexWriter writer = new IndexWriter(directory,
             new IndexWriterConfig(new JapaneseAnalyzer()));
         try {

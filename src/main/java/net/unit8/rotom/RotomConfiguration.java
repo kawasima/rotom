@@ -11,7 +11,7 @@ import enkan.util.HttpResponseUtils;
 import net.unit8.rotom.middleware.backend.AnonymousBackend;
 
 
-public class RotomConfiguration extends SystemComponent {
+public class RotomConfiguration extends SystemComponent<RotomConfiguration> {
     private String basePath = "";
     private AuthBackend<?, ?> authBackend = new AnonymousBackend();
     private Endpoint<HttpRequest, HttpResponse> unauthEndpoint =

@@ -23,6 +23,6 @@ public class AnonymousBackend implements AuthBackend<HttpRequest, String> {
 
     @Override
     public Principal authenticate(HttpRequest request, String data) {
-        return new UserPermissionPrincipal(data, PROFILES, PERMISSIONS);
+        return new UserPermissionPrincipal(0L, data, PROFILES, PERMISSIONS);
     }
 }

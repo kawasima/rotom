@@ -33,7 +33,7 @@ public class Committer {
             if (data != null) {
                 final DirCacheEntry dcEntry = new DirCacheEntry(path);
                 dcEntry.setLength(data.length);
-                dcEntry.setLastModified(System.currentTimeMillis());
+                dcEntry.setLastModified(java.time.Instant.now());
                 dcEntry.setFileMode(FileMode.REGULAR_FILE);
                 dcEntry.setObjectId(inserter.insert(Constants.OBJ_BLOB, data));
 
@@ -105,7 +105,7 @@ public class Committer {
             final CommitBuilder commit = new CommitBuilder();
             commit.setAuthor(commitInfo.getPersonIdent());
             commit.setCommitter(commitInfo.getPersonIdent());
-            commit.setEncoding(Constants.CHARACTER_ENCODING);
+            commit.setEncoding(java.nio.charset.StandardCharsets.UTF_8);
             commit.setMessage(commitInfo.getMessage());
             if (headId != null) {
                 commit.setParentId(headId);

@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import static enkan.util.ThreadingUtils.some;
 
-public class Wiki extends SystemComponent {
+public class Wiki extends SystemComponent<Wiki> {
     private String indexPage = "Home";
     private String ref = "master";
     private Repository repository;
@@ -122,7 +122,6 @@ public class Wiki extends SystemComponent {
                     }
                     String path = treeWalk.getPathString();
                     ObjectId objectId = treeWalk.getObjectId(0);
-                    git.getRepository().hasObject(objectId);
 
                     BlobEntry blob = new BlobEntry(path, objectId,
                             commit.getCommitterIdent(), commit.getCommitTime(),

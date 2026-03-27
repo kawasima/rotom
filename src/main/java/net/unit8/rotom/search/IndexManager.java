@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IndexManager extends SystemComponent {
+public class IndexManager extends SystemComponent<IndexManager> {
     private Directory directory;
     private IndexWriter writer;
     private DirectoryReader reader;
@@ -126,7 +126,7 @@ public class IndexManager extends SystemComponent {
             Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
 
             List<FoundPage> foundPages = new ArrayList<>(limit);
-            long count = Math.min(upper, results.totalHits);
+            long count = Math.min(upper, results.totalHits.value);
             for (int i = offset; i < count; i++) {
                 Document doc = reader.document(results.scoreDocs[i].doc);
                 TokenStream tokenStream = analyzer.tokenStream(null, doc.get("body"));
@@ -143,7 +143,7 @@ public class IndexManager extends SystemComponent {
             }
             return new Pagination<>(
                     foundPages,
-                    results.totalHits,
+                    results.totalHits.value,
                     offset,
                     limit);
         } catch (Exception e) {
