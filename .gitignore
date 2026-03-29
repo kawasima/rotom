@@ -17,6 +17,10 @@ buildNumber.properties
 node_modules
 yarn-error.log
 yarn.lock
+package-lock.json
+src/main/frontend/node/
+src/main/resources/public/javascript/editor.bundle.js
+src/main/resources/public/javascript/editor.bundle.js.map
 
 # Test data
 /wiki
