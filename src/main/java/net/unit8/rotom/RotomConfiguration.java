@@ -18,7 +18,7 @@ public class RotomConfiguration extends SystemComponent<RotomConfiguration> {
             (Endpoint<HttpRequest, HttpResponse>) req -> {
                     String uri = req.getUri();
                     // Only allow relative paths to prevent open redirect
-                    if (uri != null && !uri.startsWith("/")) {
+                    if (uri == null || !uri.startsWith("/") || uri.startsWith("//")) {
                         uri = "/";
                     }
                     return HttpResponseUtils.redirect("/my/signIn?url=" + uri,

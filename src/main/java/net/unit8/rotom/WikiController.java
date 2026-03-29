@@ -2,10 +2,8 @@ package net.unit8.rotom;
 
 import enkan.collection.OptionMap;
 import enkan.collection.Parameters;
-import enkan.component.BeansConverter;
 import enkan.data.HttpResponse;
 import enkan.security.bouncr.UserPermissionPrincipal;
-import enkan.util.CodecUtils;
 import kotowari.component.TemplateEngine;
 import kotowari.routing.UrlRewriter;
 import net.unit8.rotom.model.Commit;
@@ -20,7 +18,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.nio.charset.StandardCharsets;
-import javax.annotation.security.RolesAllowed;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -44,8 +42,12 @@ public class WikiController {
         return normalized.replaceFirst("^/+", "");
     }
 
-    @Inject
-    private BeansConverter beansConverter;
+    private static PersonIdent toPersonIdent(UserPermissionPrincipal principal) {
+        if (principal != null) {
+            return new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email"), ""));
+        }
+        return new PersonIdent("anonymous", "anonymous@example.com");
+    }
 
     @Inject
     private Wiki wiki;
@@ -98,12 +100,7 @@ public class WikiController {
         String name = params.get("page");
         String dir = params.get("dir");
         String format = params.get("format");
-        PersonIdent committer;
-        if (principal != null) {
-            committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
-        } else {
-            committer = new PersonIdent("anonymous", "anonymous@example.com");
-        }
+        PersonIdent committer = toPersonIdent(principal);
         wiki.writePage(name, format, params.get("content").getBytes(StandardCharsets.UTF_8), dir,
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
         Page page = wiki.getPage(Wiki.fullpath(dir, name));
@@ -135,13 +132,7 @@ public class WikiController {
     public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
         String path = sanitizePath(params.get("path"));
-        String format = params.get("format");
-        PersonIdent committer;
-        if (principal != null) {
-            committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
-        } else {
-            committer = new PersonIdent("anonymous", "anonymous@example.com");
-        }
+        PersonIdent committer = toPersonIdent(principal);
         Page page = wiki.getPage(Wiki.fullpath(path, name));
         wiki.updatePage(page, null, null, params.get("content").getBytes(StandardCharsets.UTF_8),
                 new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
@@ -156,12 +147,7 @@ public class WikiController {
     public HttpResponse delete(Parameters params, UserPermissionPrincipal principal) {
         Page page = some(sanitizePath(params.get("path")), path -> wiki.getPage(path)).orElse(null);
         if (page != null) {
-            PersonIdent committer;
-            if (principal != null) {
-                committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
-            } else {
-                committer = new PersonIdent("anonymous", "anonymous@example.com");
-            }
+            PersonIdent committer = toPersonIdent(principal);
             wiki.deletePage(page, new Commit(committer.getName(), committer.getEmailAddress(),
                     "Destroyed " + page.getName() + " (" + page.getFormat() +")"));
         }
@@ -274,12 +260,7 @@ public class WikiController {
                     "history?path=" + path, SEE_OTHER);
         }
 
-        PersonIdent committer;
-        if (principal != null) {
-            committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
-        } else {
-            committer = new PersonIdent("anonymous", "anonymous@example.com");
-        }
+        PersonIdent committer = toPersonIdent(principal);
 
         Page currentPage = wiki.getPage(path);
         wiki.updatePage(currentPage, null, null,
