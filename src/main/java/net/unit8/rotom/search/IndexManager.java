@@ -4,21 +4,13 @@ import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
 import net.unit8.rotom.model.Page;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.zeromq.ZContext;
@@ -30,17 +22,14 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class IndexManager extends SystemComponent<IndexManager> {
     private Directory directory;
     private IndexWriter writer;
-    private volatile DirectoryReader reader;
-    private volatile IndexSearcher searcher;
+    private SearcherManager searcherManager;
     private Analyzer analyzer;
-    private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
 
     private ZContext ctx;
     private ZMQ.Socket socket;
@@ -55,32 +44,15 @@ public class IndexManager extends SystemComponent<IndexManager> {
                     c.directory = FSDirectory.open(c.indexPath);
                     c.analyzer = new JapaneseAnalyzer();
 
-                    IndexWriterConfig config = new IndexWriterConfig(analyzer);
+                    IndexWriterConfig config = new IndexWriterConfig(c.analyzer);
                     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+                    config.setCommitOnClose(true);
                     c.writer = new IndexWriter(c.directory, config);
-                    c.writer.commit();
 
-                    c.reader = DirectoryReader.open(c.writer);
-                    c.searcher = new IndexSearcher(c.reader);
+                    c.searcherManager = new SearcherManager(c.writer, new SearcherFactory());
 
                     c.ctx = new ZContext();
-                    ZMQ.Socket commitSocket = ZThread.fork(c.ctx, (args, ctx, pipe) -> {
-                        while(true) {
-                            pipe.recv();
-                            // Reader re-open
-                            try {
-                                c.writer.commit();
-                                DirectoryReader newReader = DirectoryReader.openIfChanged(c.reader, c.writer);
-                                if (newReader != null) {
-                                    c.reader = newReader;
-                                    c.searcher = new IndexSearcher(newReader);
-                                }
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        }
-                    });
-                    c.socket = ZThread.fork(c.ctx, new LuceneTaskRunner(), writer, commitSocket);
+                    c.socket = ZThread.fork(c.ctx, new LuceneTaskRunner(), c.writer, c.searcherManager);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -88,9 +60,9 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
             @Override
             public void stop(IndexManager c) {
-                if (c.reader != null) {
+                if (c.searcherManager != null) {
                     try {
-                        c.reader.close();
+                        c.searcherManager.close();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -119,41 +91,57 @@ public class IndexManager extends SystemComponent<IndexManager> {
     }
 
     public Pagination<FoundPage> search(String queryStr, int offset, int limit) {
+        if (queryStr == null || queryStr.isBlank()) {
+            return new Pagination<>(List.of(), 0, offset, limit, true);
+        }
+
+        IndexSearcher searcher = null;
         try {
-            if (queryStr == null || queryStr.isBlank()) {
-                return new Pagination<>(List.of(), 0, offset, limit);
-            }
             QueryParser parser = new QueryParser("body", new JapaneseAnalyzer());
             Query query = parser.parse(QueryParser.escape(queryStr));
             int upper = offset + limit;
-            TopDocs results = searcher.search(query, upper);
-            Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
 
+            searcher = searcherManager.acquire();
+            TopDocs results = searcher.search(query, upper);
+
+            UnifiedHighlighter highlighter = UnifiedHighlighter.builder(searcher, analyzer)
+                    .withMaxLength(Integer.MAX_VALUE)
+                    .build();
+            String[] bodyHighlights = highlighter.highlight("body", query, results);
+
+            StoredFields storedFields = searcher.storedFields();
             List<FoundPage> foundPages = new ArrayList<>(limit);
             long count = Math.min(results.scoreDocs.length, Math.min(upper, results.totalHits.value));
             for (int i = offset; i < count; i++) {
-                Document doc = reader.document(results.scoreDocs[i].doc);
-                TokenStream tokenStream = analyzer.tokenStream(null, doc.get("body"));
-
-                TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, doc.get("body"), false, 10);
+                var doc = storedFields.document(results.scoreDocs[i].doc);
+                String summary = (bodyHighlights != null && i < bodyHighlights.length && bodyHighlights[i] != null)
+                        ? bodyHighlights[i]
+                        : "";
                 foundPages.add(
                         new FoundPage(doc.get("path"),
                                 doc.get("name"),
-                                Arrays.stream(fragments)
-                                        .filter(f -> f != null && f.getScore() > 0)
-                                        .map(TextFragment::toString)
-                                        .collect(Collectors.joining()),
+                                summary,
                                 results.scoreDocs[i].score));
             }
+
+            boolean exact = results.totalHits.relation == TotalHits.Relation.EQUAL_TO;
             return new Pagination<>(
                     foundPages,
                     results.totalHits.value,
                     offset,
-                    limit);
+                    limit,
+                    exact);
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (searcher != null) {
+                try {
+                    searcherManager.release(searcher);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
         }
-
     }
 
     public void save(Page page) {

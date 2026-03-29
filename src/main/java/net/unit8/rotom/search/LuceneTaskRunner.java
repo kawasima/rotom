@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.SearcherManager;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMsg;
@@ -15,33 +16,41 @@ import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.util.stream.Collectors;
 
-public class LuceneTaskRunner implements ZThread.IAttachedRunnable{
+public class LuceneTaskRunner implements ZThread.IAttachedRunnable {
 
     @Override
     public void run(Object[] args, ZContext ctx, ZMQ.Socket pipe) {
         boolean shutdown = false;
         IndexWriter writer = (IndexWriter) args[0];
-        ZMQ.Socket commitSocket = (ZMQ.Socket) args[1];
-        while(!shutdown) {
+        SearcherManager searcherManager = (SearcherManager) args[1];
+        while (!shutdown) {
             ZMsg msg = ZMsg.recvMsg(pipe);
             String type = msg.popString();
-            switch(type) {
+            switch (type) {
                 case "deleteAll":
                     deleteAll(writer);
-                    commitSocket.send("commit");
+                    refreshSearcher(searcherManager);
                     break;
                 case "update":
                     update(writer,
-                        /* path */msg.pop().getString(ZMQ.CHARSET),
-                        /* name */msg.pop().getString(ZMQ.CHARSET),
-                        /* data */msg.pop().getString(ZMQ.CHARSET),
-                        /* modified*/msg.popString());
-                    commitSocket.send("commit");
+                        msg.pop().getString(ZMQ.CHARSET),
+                        msg.pop().getString(ZMQ.CHARSET),
+                        msg.pop().getString(ZMQ.CHARSET),
+                        msg.popString());
+                    refreshSearcher(searcherManager);
                     break;
                 case "shutdown":
                     shutdown = true;
                     break;
             }
+        }
+    }
+
+    private void refreshSearcher(SearcherManager searcherManager) {
+        try {
+            searcherManager.maybeRefresh();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

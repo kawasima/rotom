@@ -7,6 +7,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -16,8 +17,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 
 public class LuceneTest {
@@ -46,16 +45,11 @@ public class LuceneTest {
         Query query = new TermQuery(new Term("body", "東京"));
         TopDocs results = searcher.search(query, 10);
         System.out.println(results.scoreDocs.length);
-        Arrays.stream(results.scoreDocs)
-            .forEach(scoreDoc -> {
-                try {
-                    Document doc = searcher.doc(scoreDoc.doc);
-                    System.out.println(doc.getField("title").stringValue());
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
 
-
+        StoredFields storedFields = searcher.storedFields();
+        for (var scoreDoc : results.scoreDocs) {
+            Document doc = storedFields.document(scoreDoc.doc);
+            System.out.println(doc.getField("title").stringValue());
+        }
     }
 }
