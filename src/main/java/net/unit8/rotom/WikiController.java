@@ -31,7 +31,7 @@ import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
 import static enkan.util.ThreadingUtils.*;
 
 public class WikiController {
-    private static String sanitizePath(String path) {
+    static String sanitizePath(String path) {
         if (path == null) return "";
         // Normalize and reject path traversal
         String normalized = path.replace('\\', '/');
@@ -42,7 +42,7 @@ public class WikiController {
         return normalized.replaceFirst("^/+", "");
     }
 
-    private static PersonIdent toPersonIdent(UserPermissionPrincipal principal) {
+    static PersonIdent toPersonIdent(UserPermissionPrincipal principal) {
         if (principal != null) {
             return new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email"), ""));
         }
@@ -98,11 +98,17 @@ public class WikiController {
     @RolesAllowed("page:create")
     public HttpResponse create(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
-        String dir = params.get("dir");
+        String content = params.get("content");
         String format = params.get("format");
+        if (name == null || name.isBlank() || content == null || format == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "createForm?path=", SEE_OTHER);
+        }
+        String dir = Optional.ofNullable(params.get("dir")).orElse("");
         PersonIdent committer = toPersonIdent(principal);
-        wiki.writePage(name, format, params.get("content").getBytes(StandardCharsets.UTF_8), dir,
-                new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
+        wiki.writePage(name, format, content.getBytes(StandardCharsets.UTF_8), dir,
+                new Commit(committer.getName(), committer.getEmailAddress(),
+                        Optional.ofNullable(params.get("message")).orElse("Created " + name)));
         Page page = wiki.getPage(Wiki.fullpath(dir, name));
         indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
@@ -132,10 +138,20 @@ public class WikiController {
     public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
         String path = sanitizePath(params.get("path"));
+        String content = params.get("content");
+        if (name == null || content == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "edit?path=" + path, SEE_OTHER);
+        }
         PersonIdent committer = toPersonIdent(principal);
         Page page = wiki.getPage(Wiki.fullpath(path, name));
-        wiki.updatePage(page, null, null, params.get("content").getBytes(StandardCharsets.UTF_8),
-                new Commit(committer.getName(), committer.getEmailAddress(), params.get("message")));
+        if (page == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "createForm?path=" + Wiki.fullpath(path, name), SEE_OTHER);
+        }
+        wiki.updatePage(page, null, null, content.getBytes(StandardCharsets.UTF_8),
+                new Commit(committer.getName(), committer.getEmailAddress(),
+                        Optional.ofNullable(params.get("message")).orElse("Updated " + name)));
         page = wiki.getPage(Wiki.fullpath(path, name));
         indexManager.save(page);
         return UrlRewriter.redirect(WikiController.class,
@@ -221,7 +237,12 @@ public class WikiController {
 
     @RolesAllowed("page:read")
     public HttpResponse doCompare(Parameters params) {
-        Page page = wiki.getPage(sanitizePath(params.get("path")));
+        String path = sanitizePath(params.get("path"));
+        Page page = wiki.getPage(path);
+        if (page == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "showPageOrFile?path=" + path, SEE_OTHER);
+        }
         String diffEntries = wiki.getDiff(page, params.get("hash1"), params.get("hash2"));
 
         return templateEngine.render("compare",

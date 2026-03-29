@@ -116,4 +116,68 @@ public class WikiTest {
         assertNotNull(diff);
         assertFalse(diff.isEmpty());
     }
+
+    @Test
+    void getNonexistentPageReturnsNull() throws IOException {
+        Wiki wiki = createWiki();
+        assertNull(wiki.getPage("does-not-exist"));
+    }
+
+    @Test
+    void emptyWikiGetPagesReturnsEmpty() throws IOException {
+        Wiki wiki = createWiki();
+        assertTrue(wiki.getPages("").isEmpty());
+    }
+
+    @Test
+    void writePageWithNullDir() throws IOException {
+        Wiki wiki = createWiki();
+        wiki.writePage("test", "markdown", "content".getBytes(StandardCharsets.UTF_8), null,
+                new Commit("user", "user@example.com", "init"));
+        assertNotNull(wiki.getPage("test"));
+    }
+
+    @Test
+    void writePageWithEmptyDir() throws IOException {
+        Wiki wiki = createWiki();
+        wiki.writePage("test", "markdown", "content".getBytes(StandardCharsets.UTF_8), "",
+                new Commit("user", "user@example.com", "init"));
+        assertNotNull(wiki.getPage("test"));
+    }
+
+    @Test
+    void writePageWithSubdirectory() throws IOException {
+        Wiki wiki = createWiki();
+        wiki.writePage("guide", "markdown", "# Guide".getBytes(StandardCharsets.UTF_8), "docs",
+                new Commit("user", "user@example.com", "init"));
+        assertNotNull(wiki.getPage("docs/guide"));
+    }
+
+    @Test
+    void spacesInNameConvertedToHyphens() throws IOException {
+        Wiki wiki = createWiki();
+        wiki.writePage("my page", "markdown", "content".getBytes(StandardCharsets.UTF_8), null,
+                new Commit("user", "user@example.com", "init"));
+        assertNotNull(wiki.getPage("my-page"));
+    }
+
+    @Test
+    void fullpathWithNullDir() {
+        assertEquals("name", Wiki.fullpath(null, "name"));
+    }
+
+    @Test
+    void fullpathWithEmptyDir() {
+        assertEquals("name", Wiki.fullpath("", "name"));
+    }
+
+    @Test
+    void fullpathCombinesDirAndName() {
+        assertEquals("docs/name", Wiki.fullpath("docs", "name"));
+    }
+
+    @Test
+    void fullpathStripsTrailingSlash() {
+        assertEquals("docs/name", Wiki.fullpath("docs/", "name"));
+    }
 }

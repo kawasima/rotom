@@ -76,7 +76,13 @@ public class Committer {
     }
 
     public void addToIndex(String dir, String name, String format, byte[] data) throws IOException {
-        dir = dir.replace(' ', '-');
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
+        if (format == null) {
+            throw new IllegalArgumentException("format must not be null");
+        }
+        dir = dir == null ? "" : dir.replace(' ', '-');
         name = name.replace(' ', '-');
         name = name + "." +
                 MarkupType.valueOf(format.toUpperCase(Locale.US)).getExtension();

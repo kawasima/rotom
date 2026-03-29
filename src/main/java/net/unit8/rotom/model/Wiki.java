@@ -31,6 +31,9 @@ public class Wiki extends SystemComponent<Wiki> {
     private Git git;
 
     public static String fullpath(String dir, String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("name must not be null");
+        }
         if (dir == null || dir.isEmpty()) {
             return name;
         } else {

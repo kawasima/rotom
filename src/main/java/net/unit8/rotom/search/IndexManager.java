@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -114,7 +115,7 @@ public class IndexManager extends SystemComponent<IndexManager> {
             TopDocs results = searcher.search(query, upper);
 
             UnifiedHighlighter highlighter = UnifiedHighlighter.builder(searcher, analyzer)
-                    .withMaxLength(Integer.MAX_VALUE)
+                    .withMaxLength(Integer.MAX_VALUE - 1)
                     .build();
             String[] bodyHighlights = highlighter.highlight("body", query, results);
 
@@ -154,8 +155,9 @@ public class IndexManager extends SystemComponent<IndexManager> {
     }
 
     public void save(Page page) {
-        String path = page.getDir() + "/" + page.getName();
-        String name = page.getName();
+        String dir = Optional.ofNullable(page.getDir()).orElse("");
+        String name = Optional.ofNullable(page.getName()).orElse("");
+        String path = dir.isEmpty() ? name : dir + "/" + name;
         String data = page.getFormattedData();
         String modified = String.valueOf(page.getModifiedTime());
         executor.submit(() -> {
@@ -198,6 +200,16 @@ public class IndexManager extends SystemComponent<IndexManager> {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Waits for all pending index operations to complete.
+     * Intended for testing; production code should not need to call this.
+     */
+    public void awaitPendingOperations() throws InterruptedException {
+        var latch = new java.util.concurrent.CountDownLatch(1);
+        executor.submit(latch::countDown);
+        latch.await(5, TimeUnit.SECONDS);
     }
 
     public void setIndexPath(Path indexPath) {

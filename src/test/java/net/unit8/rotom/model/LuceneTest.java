@@ -10,23 +10,22 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
-public class LuceneTest {
+import static org.junit.jupiter.api.Assertions.*;
+
+class LuceneTest {
+
     @Test
-    public void test() throws Exception {
+    void japaneseTokenizationAndSearch() throws Exception {
         Directory directory = new ByteBuffersDirectory();
-        IndexWriter writer = new IndexWriter(directory,
-            new IndexWriterConfig(new JapaneseAnalyzer()));
-        try {
-            writer.deleteAll();
+        try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new JapaneseAnalyzer()))) {
             Document doc1 = new Document();
             doc1.add(new TextField("title", "hoge", Field.Store.YES));
             doc1.add(new TextField("body", "東京特許許可局", Field.Store.NO));
@@ -36,20 +35,29 @@ public class LuceneTest {
             doc2.add(new TextField("body", "かきくけこ", Field.Store.NO));
 
             writer.addDocuments(Arrays.asList(doc1, doc2));
-            writer.commit();
-        } finally {
-            writer.close();
         }
 
         IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(directory));
-        Query query = new TermQuery(new Term("body", "東京"));
-        TopDocs results = searcher.search(query, 10);
-        System.out.println(results.scoreDocs.length);
+        TopDocs results = searcher.search(new TermQuery(new Term("body", "東京")), 10);
+
+        assertEquals(1, results.scoreDocs.length, "Should find exactly one document matching '東京'");
 
         StoredFields storedFields = searcher.storedFields();
-        for (var scoreDoc : results.scoreDocs) {
-            Document doc = storedFields.document(scoreDoc.doc);
-            System.out.println(doc.getField("title").stringValue());
+        Document found = storedFields.document(results.scoreDocs[0].doc);
+        assertEquals("hoge", found.getField("title").stringValue());
+    }
+
+    @Test
+    void noResultsForUnmatchedQuery() throws Exception {
+        Directory directory = new ByteBuffersDirectory();
+        try (IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new JapaneseAnalyzer()))) {
+            Document doc = new Document();
+            doc.add(new TextField("body", "東京特許許可局", Field.Store.NO));
+            writer.addDocument(doc);
         }
+
+        IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(directory));
+        TopDocs results = searcher.search(new TermQuery(new Term("body", "大阪")), 10);
+        assertEquals(0, results.scoreDocs.length);
     }
 }
