@@ -42,6 +42,7 @@ public class RotomApplicationFactory implements ApplicationFactory<HttpRequest, 
             r.get("/edit/*path").to(WikiController.class, "edit");
             r.post("/edit/*dummy").to(WikiController.class, "update");
             r.post("/delete/*path").to(WikiController.class, "delete");
+            r.post("/restore/*path").to(WikiController.class, "restore");
             r.get("/history/*path").to(WikiController.class, "history");
             r.post("/compare/*path").to(WikiController.class, "compare");
             r.get("/compare/*path/:hash1..:hash2").to(WikiController.class, "doCompare");
