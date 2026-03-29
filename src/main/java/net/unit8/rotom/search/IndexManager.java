@@ -5,9 +5,12 @@ import enkan.component.SystemComponent;
 import net.unit8.rotom.model.Page;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
+import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
@@ -153,16 +156,37 @@ public class IndexManager extends SystemComponent<IndexManager> {
         String data = page.getFormattedData();
         String modified = String.valueOf(page.getModifiedTime());
         executor.submit(() -> {
-            LuceneTaskRunner.update(writer, path, name, data, modified);
+            updateDocument(path, name, data, modified);
             refreshSearcher();
         });
     }
 
     public void deleteAll() {
         executor.submit(() -> {
-            LuceneTaskRunner.deleteAll(writer);
+            try {
+                writer.deleteAll();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
             refreshSearcher();
         });
+    }
+
+    private void updateDocument(String path, String name, String data, String modified) {
+        try {
+            Document doc = new Document();
+            try (var reader = new java.io.BufferedReader(new HTMLStripCharFilter(new java.io.StringReader(data)))) {
+                doc.add(new Field("body",
+                        reader.lines().collect(java.util.stream.Collectors.joining("\n")),
+                        TextField.TYPE_STORED));
+            }
+            doc.add(new StringField("path", path, Field.Store.YES));
+            doc.add(new TextField("name", name, Field.Store.YES));
+            doc.add(new LongPoint("modified", Long.valueOf(modified)));
+            writer.updateDocument(new Term("path", path), doc);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private void refreshSearcher() {
