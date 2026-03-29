@@ -69,7 +69,7 @@ public class RotomApplicationFactory implements ApplicationFactory<HttpRequest, 
                 .set(CorsMiddleware::setHeaders,
                         new HashSet<>(Arrays.asList("X-Bouncr-Credential", "Content-Type")))
                 .build());
-        app.use(new AuthenticationMiddleware(Collections.singletonList(injector.inject(configuration.getAuthBackend()))));
+        app.use(new AuthenticationMiddleware<>(Collections.singletonList(injector.inject(configuration.getAuthBackend()))));
         app.use(and(path("^(" + configuration.getBasePath() + ")($|/.*)"), authenticated().negate()), configuration.getUnauthEndpoint());
         app.use(builder(new ResourceMiddleware())
                 .set(ResourceMiddleware::setUriPrefix, configuration.getBasePath() + "/assets")
@@ -79,9 +79,9 @@ public class RotomApplicationFactory implements ApplicationFactory<HttpRequest, 
                 .build());
         app.use(new RoutingMiddleware(routes));
         app.use(new FormMiddleware());
-        app.use(new SerDesMiddleware());
-        app.use(new ValidateBodyMiddleware());
-        app.use(new ControllerInvokerMiddleware(injector));
+        app.use(new SerDesMiddleware<>());
+        app.use(new ValidateBodyMiddleware<>());
+        app.use(new ControllerInvokerMiddleware<>(injector));
 
         return app;
     }

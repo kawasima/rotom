@@ -244,7 +244,7 @@ public class Wiki extends SystemComponent<Wiki> {
 
 
     @Override
-    protected ComponentLifecycle lifecycle() {
+    protected ComponentLifecycle<Wiki> lifecycle() {
         return new ComponentLifecycle<Wiki>() {
             @Override
             public void start(Wiki wiki) {

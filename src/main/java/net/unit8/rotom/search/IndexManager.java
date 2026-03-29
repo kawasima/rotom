@@ -40,7 +40,6 @@ public class IndexManager extends SystemComponent<IndexManager> {
     private volatile DirectoryReader reader;
     private volatile IndexSearcher searcher;
     private Analyzer analyzer;
-    private QueryParser parser;
     private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
 
     private ZContext ctx;
@@ -63,7 +62,6 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
                     c.reader = DirectoryReader.open(c.writer);
                     c.searcher = new IndexSearcher(c.reader);
-                    c.parser = new MultiFieldQueryParser(new String[]{"body", "name", "modified"}, c.analyzer);
 
                     c.ctx = new ZContext();
                     ZMQ.Socket commitSocket = ZThread.fork(c.ctx, (args, ctx, pipe) -> {
