@@ -13,7 +13,10 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <enkan.version>0.14.1</enkan.version>
+        <lucene.version>9.12.3</lucene.version>
         <flexmark.version>0.64.8</flexmark.version>
+        <jgit.version>7.6.0.202603022253-r</jgit.version>
+        <junit.version>5.14.3</junit.version>
     </properties>
 
     <build>
@@ -117,29 +120,24 @@
             <version>${enkan.version}</version>
         </dependency>
         <dependency>
-            <groupId>net.unit8.enkan</groupId>
-            <artifactId>enkan-component-metrics</artifactId>
-            <version>${enkan.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>9.12.3</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analysis-kuromoji</artifactId>
-            <version>9.12.3</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
-            <version>9.12.3</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-highlighter</artifactId>
-            <version>9.12.3</version>
+            <version>${lucene.version}</version>
         </dependency>
         <dependency>
             <groupId>net.unit8.enkan</groupId>
@@ -148,27 +146,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.44</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.17</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.jaxrs</groupId>
-            <artifactId>jackson-jaxrs-json-provider</artifactId>
-            <version>2.21.2</version>
-        </dependency>
-        <dependency>
-            <groupId>net.unit8.enkan</groupId>
-            <artifactId>enkan-repl-server</artifactId>
-            <version>${enkan.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
@@ -176,21 +157,9 @@
         </dependency>
 
         <dependency>
-            <groupId>dev.failsafe</groupId>
-            <artifactId>failsafe</artifactId>
-            <version>3.3.2</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.2.0.202503040940-r</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.zeromq</groupId>
-            <artifactId>jeromq</artifactId>
-            <version>0.6.0</version>
+            <version>${jgit.version}</version>
         </dependency>
 
         <!-- format -->
@@ -239,14 +208,14 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.14.3</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.14.3</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -314,6 +283,11 @@
                 <dependency>
                     <groupId>net.unit8.enkan</groupId>
                     <artifactId>enkan-devel</artifactId>
+                    <version>${enkan.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>net.unit8.enkan</groupId>
+                    <artifactId>enkan-repl-server</artifactId>
                     <version>${enkan.version}</version>
                 </dependency>
             </dependencies>
