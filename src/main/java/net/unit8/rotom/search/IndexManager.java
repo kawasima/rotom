@@ -17,11 +17,14 @@ import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -175,9 +178,9 @@ public class IndexManager extends SystemComponent<IndexManager> {
     private void updateDocument(String path, String name, String data, String modified) {
         try {
             Document doc = new Document();
-            try (var reader = new java.io.BufferedReader(new HTMLStripCharFilter(new java.io.StringReader(data)))) {
+            try (var reader = new BufferedReader(new HTMLStripCharFilter(new StringReader(data)))) {
                 doc.add(new Field("body",
-                        reader.lines().collect(java.util.stream.Collectors.joining("\n")),
+                        reader.lines().collect(Collectors.joining("\n")),
                         TextField.TYPE_STORED));
             }
             doc.add(new StringField("path", path, Field.Store.YES));
