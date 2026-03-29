@@ -120,7 +120,7 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
             StoredFields storedFields = searcher.storedFields();
             List<FoundPage> foundPages = new ArrayList<>(limit);
-            long count = Math.min(results.scoreDocs.length, Math.min(upper, results.totalHits.value));
+            long count = Math.min(results.scoreDocs.length, Math.min(upper, results.totalHits.value()));
             for (int i = offset; i < count; i++) {
                 var doc = storedFields.document(results.scoreDocs[i].doc);
                 String summary = (bodyHighlights != null && i < bodyHighlights.length && bodyHighlights[i] != null)
@@ -133,10 +133,10 @@ public class IndexManager extends SystemComponent<IndexManager> {
                                 results.scoreDocs[i].score));
             }
 
-            boolean exact = results.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+            boolean exact = results.totalHits.relation() == TotalHits.Relation.EQUAL_TO;
             return new Pagination<>(
                     foundPages,
-                    results.totalHits.value,
+                    results.totalHits.value(),
                     offset,
                     limit,
                     exact);

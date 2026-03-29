@@ -21,6 +21,6 @@ public class IndexViewer {
         QueryParser parser = new QueryParser("body", new JapaneseAnalyzer());
         Query query = parser.parse("千葉");
         TopDocs results = searcher.search(query, 10);
-        System.out.println(results.totalHits.value);
+        System.out.println(results.totalHits.value());
     }
 }
