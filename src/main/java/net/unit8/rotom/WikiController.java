@@ -22,6 +22,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import java.nio.charset.StandardCharsets;
 import javax.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -240,5 +241,21 @@ public class WikiController {
         return templateEngine.render("compare",
                 "page", page,
                 "diffEntries", diffEntries);
+    }
+
+    @RolesAllowed("page:read")
+    public HttpResponse preview(Parameters params) {
+        String content = Optional.ofNullable(params.get("content")).orElse("");
+        String format = Optional.ofNullable(params.get("format")).orElse("Markdown");
+
+        String rendered = Arrays.stream(MarkupType.values())
+                .filter(mt -> mt.getName().equalsIgnoreCase(format))
+                .findFirst()
+                .map(mt -> mt.render(content))
+                .orElse(content);
+
+        HttpResponse response = HttpResponse.of(rendered);
+        response.setContentType("text/html; charset=utf-8");
+        return response;
     }
 }

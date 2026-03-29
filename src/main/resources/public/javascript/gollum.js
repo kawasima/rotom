@@ -1,282 +1,115 @@
 // Helpers
-function pageName(){
-  // "my/dir/file" => "file"
-  return typeof(pageFullPath) == 'undefined' ? undefined : pageFullPath.split('/').pop();
+function pageName() {
+  return typeof pageFullPath === "undefined" ? undefined : pageFullPath.split("/").pop();
 }
-function pagePath(){
-  // "my/dir/file" => "my/dir"
-  return typeof(pageFullPath) == 'undefined' ? undefined : pageFullPath.split('/').slice(0,-1).join('/');
+function pagePath() {
+  return typeof pageFullPath === "undefined" ? undefined : pageFullPath.split("/").slice(0, -1).join("/");
 }
 
-// Generic HTML escape function
-function htmlEscape( str ) {
-  // The (slower) alternative is: return $('<div/>').text(str).html();
-  // http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding/7124052#7124052
+function htmlEscape(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-// Given a page name and a current path, returns a fully qualified path.
-function abspath(path, name){
-  // Make sure the given path starts at the root.
-  if(name[0] != '/'){
-    name = '/' + name;
-    if (path) {
-      name = '/' + path + name;
-    }
-  }
-  var name_parts = name.split('/');
-  var newPath = name_parts.slice(0, -1).join('/');
-  var newName = name_parts.pop();
-  // return array of [path, name]
-  return [newPath, newName];
-}
-
-// ua
-$(document).ready(function() {
-  $('#delete-link').click( function(e) {
-    var ok = confirm($(this).data('confirm'));
-    if ( ok ) {
-      $(this).closest("form").submit();
-    }
-    // Don't navigate on cancel.
-    e.preventDefault();
-  } );
-
-  var nodeSelector = {
-    node1: null,
-    node2: null,
-
-    selectNodeRange: function( n1, n2 ) {
-      if ( nodeSelector.node1 && nodeSelector.node2 ) {
-        $('#wiki-history td.selected').removeClass('selected');
-        nodeSelector.node1.addClass('selected');
-        nodeSelector.node2.addClass('selected');
-
-        // swap the nodes around if they went in reverse
-        if ( nodeSelector.nodeComesAfter( nodeSelector.node1,
-                                          nodeSelector.node2 ) ) {
-          var n = nodeSelector.node1;
-          nodeSelector.node1 = nodeSelector.node2;
-          nodeSelector.node2 = n;
-        }
-
-        var s = true;
-        var $nextNode = nodeSelector.node1.next();
-        while ( $nextNode ) {
-          $nextNode.addClass('selected');
-          if ( $nextNode[0] == nodeSelector.node2[0] ) {
-            break;
-          }
-          $nextNode = $nextNode.next();
-        }
+document.addEventListener("DOMContentLoaded", function () {
+  // Delete link confirmation
+  var deleteLink = document.getElementById("delete-link");
+  if (deleteLink) {
+    deleteLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (confirm(this.dataset.confirm)) {
+        this.closest("form").submit();
       }
-    },
+    });
+  }
 
-    nodeComesAfter: function ( n1, n2 ) {
-      var s = false;
-      $(n1).prevAll().each(function() {
-        if ( $(this)[0] == $(n2)[0] ) {
-          s = true;
-        }
+  // History page: version comparison checkboxes
+  var wikiHistory = document.getElementById("wiki-history");
+  if (wikiHistory) {
+    var node1 = null;
+    var node2 = null;
+
+    function clearSelections() {
+      wikiHistory.querySelectorAll("tr.selected").forEach(function (tr) {
+        tr.classList.remove("selected");
       });
-      return s;
-    },
+    }
 
-    checkNode: function( nodeCheckbox ) {
-      var $nodeCheckbox = nodeCheckbox;
-      var $node = $(nodeCheckbox).parent().parent();
-      // if we're unchecking
-      if ( !$nodeCheckbox.is(':checked') ) {
+    function selectRange(n1, n2) {
+      if (!n1 || !n2) return;
+      clearSelections();
+      var rows = Array.from(wikiHistory.querySelectorAll("tbody tr"));
+      var i1 = rows.indexOf(n1);
+      var i2 = rows.indexOf(n2);
+      if (i1 > i2) { var tmp = i1; i1 = i2; i2 = tmp; }
+      for (var i = i1; i <= i2; i++) {
+        rows[i].classList.add("selected");
+      }
+    }
 
-        // remove the range, since we're breaking it
-        $('#wiki-history tr.selected').each(function() {
-          if ( $(this).find('td.checkbox input').is(':checked') ) {
-            return;
+    wikiHistory.querySelectorAll("td.checkbox input").forEach(function (checkbox) {
+      checkbox.addEventListener("click", function () {
+        var row = this.closest("tr");
+        if (!this.checked) {
+          clearSelections();
+          if (row === node1) {
+            node1 = node2;
+            node2 = null;
+          } else if (row === node2) {
+            node2 = null;
           }
-          $(this).removeClass('selected');
-        });
-
-        // no longer track this
-        if ( $node[0] == nodeSelector.node1[0] ) {
-          nodeSelector.node1 = null;
-          if ( nodeSelector.node2 ) {
-            nodeSelector.node1 = nodeSelector.node2;
-            nodeSelector.node2 = null;
-          }
-        } else if ( $node[0] == nodeSelector.node2[0] ) {
-          nodeSelector.node2 = null;
-        }
-
-      } else {
-        if ( !nodeSelector.node1 ) {
-          nodeSelector.node1 = $node;
-          nodeSelector.node1.addClass('selected');
-        } else if ( !nodeSelector.node2 ) {
-          // okay, we don't have a node 2 but have a node1
-          nodeSelector.node2 = $node;
-          nodeSelector.node2.addClass('selected');
-          nodeSelector.selectNodeRange( nodeSelector.node1,
-                                        nodeSelector.node2 );
+          if (node1) node1.classList.add("selected");
+          if (node2) { node2.classList.add("selected"); selectRange(node1, node2); }
         } else {
-          // we have two selected already
-          $nodeCheckbox[0].checked = false;
-        }
-      }
-    }
-  };
-
-  // ua detection
-  if ($.browser.mozilla) {
-    $('body').addClass('ff');
-  } else if ($.browser.webkit) {
-    $('body').addClass('webkit');
-  } else if ($.browser.msie) {
-    $('body').addClass('ie');
-    if ($.browser.version == "7.0") {
-      $('body').addClass('ie7');
-    } else if ($.browser.version == "8.0") {
-      $('body').addClass('ie8');
-    }
-  }
-
-  if ($('#minibutton-upload-page').length) {
-    $('#minibutton-upload-page').parent().removeClass('jaws');
-    $('#minibutton-upload-page').click(function(e) {
-      e.preventDefault();
-
-      $.GollumDialog.init({
-        title: 'Upload File',
-        fields: [
-          {
-            type:   'file',
-            context: 'Your uploaded file will be accessible at<br>/'+uploadDest+'/[filename]',
-            action: baseUrl + '/uploadFile'
+          if (!node1) {
+            node1 = row;
+            node1.classList.add("selected");
+          } else if (!node2) {
+            node2 = row;
+            selectRange(node1, node2);
+          } else {
+            this.checked = false;
           }
-        ],
-        OK: function( res ) {
-          $('#upload').submit();
         }
       });
-    });
-  }
 
-  if ($('#minibutton-rename-page').length) {
-    $('#minibutton-rename-page').parent().removeClass('jaws');
-    $('#minibutton-rename-page').click(function(e) {
-      e.preventDefault();
-
-      var path = pagePath();
-      var oldName = pageName();
-      var context_blurb =
-        "Renamed page will be under " +
-        "<span class='path'>" + htmlEscape('/' + path) + "</span>" +
-        " unless an absolute path is given."
-
-      $.GollumDialog.init({
-        title: 'Rename Page',
-        fields: [
-          {
-            id:   'name',
-            name: 'Rename to',
-            type: 'text',
-            defaultValue: oldName || '',
-            context: context_blurb
-          }
-        ],
-        OK: function( res ) {
-          var newName = 'Rename Page';
-          if ( res['name'] ) {
-            newName = res['name'];
-          }
-          var name_parts = abspath(path, newName);
-          var newPath = name_parts[0];
-
-          var msg = '/' + path == newPath ? 'Renamed ' + oldName + ' to ' + newName
-                                          : 'Renamed ' + oldName + ' to ' + name_parts.join('/');
-          // Fill in the rename form
-          // This is preferable to AJAX so that we automatically follow the 302 response.
-          var rename_form = $("form[name=rename]");
-          rename_form.children("input[name=rename]").val(name_parts.join('/'));
-          rename_form.children("input[name=message]").val(msg);
-          rename_form.submit();
-        }
-      });
-    });
-  }
-
-  if ($('#wiki-wrapper').hasClass('history')) {
-    $('#wiki-history td.checkbox input').each(function() {
-      $(this).click(function() {
-        nodeSelector.checkNode($(this));
-      });
-      if ( $(this).is(':checked') ) {
-        nodeSelector.checkNode($(this));
+      if (checkbox.checked) {
+        checkbox.click();
+        checkbox.click();
       }
     });
 
-    if ($('.history a.action-compare-revision').length) {
-      $('.history a.action-compare-revision').click(function() {
-        $("#version-form").submit();
+    var compareBtn = document.querySelector(".history a.action-compare-revision");
+    if (compareBtn) {
+      compareBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var form = document.getElementById("version-form");
+        if (form) form.submit();
       });
     }
   }
 
-  if ($('#searchbar a#search-submit').length) {
-    $.GollumPlaceholder.add($('#searchbar #search-query'));
-    $('#searchbar a#search-submit').click(function(e) {
+  // Search bar
+  var searchSubmit = document.querySelector("#searchbar a#search-submit");
+  if (searchSubmit) {
+    searchSubmit.addEventListener("click", function (e) {
       e.preventDefault();
-      $('#searchbar #search-form')[0].submit();
-    });
-    $('#searchbar #search-form').submit(function(e) {
-      $.GollumPlaceholder.clearAll();
-      $(this).unbind('submit');
-      $(this).submit();
+      var form = document.querySelector("#searchbar #search-form");
+      if (form) form.submit();
     });
   }
 
-  if ($('#gollum-revert-form').length &&
-      $('.gollum-revert-button').length ) {
-    $('a.gollum-revert-button').click(function(e) {
+  // Revert button
+  var revertBtn = document.querySelector("a.gollum-revert-button");
+  if (revertBtn) {
+    revertBtn.addEventListener("click", function (e) {
       e.preventDefault();
-      $('#gollum-revert-form').submit();
-    });
-  }
-
-  if( $('#wiki-wrapper.edit').length ){
-    $("#gollum-editor-submit").click( function() { window.onbeforeunload = null; } );
-    $("#gollum-editor-body").one('change', function(){
-      window.onbeforeunload = function(){ return "Leaving will discard all edits!" };
-    });
-    $.GollumEditor();
-  }
-
-  if( $('#wiki-wrapper.create').length ){
-    $("#gollum-editor-submit").click( function() { window.onbeforeunload = null; } );
-    $("#gollum-editor-body").one('change', function(){
-      window.onbeforeunload = function(){ return "Leaving will not create a new page!" };
-    });
-    $.GollumEditor({ NewFile: true, MarkupType: default_markup });
-  }
-
-  if( $('#wiki-history').length ){
-    var lookup = {};
-    $('img.identicon').each(function(index, element){
-      var $item   = $(element);
-      var code    = parseInt($item.data('identicon'), 10);
-      var img_bin = lookup[code];
-      if( img_bin === undefined ){
-        var size = 16;
-        var canvas = $('<canvas width=16 height=16/>').get(0);
-        render_identicon(canvas, code, 16);
-        img_bin = canvas.toDataURL("image/png");
-        lookup[code] = img_bin;
-      }
-      $item.attr('src', img_bin);
+      var form = document.getElementById("gollum-revert-form");
+      if (form) form.submit();
     });
   }
 });
