@@ -21,7 +21,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.nio.charset.StandardCharsets;
 import javax.annotation.security.RolesAllowed;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;

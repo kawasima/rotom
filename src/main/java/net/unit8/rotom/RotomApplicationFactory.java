@@ -12,7 +12,7 @@ import kotowari.middleware.*;
 import kotowari.routing.Routes;
 import net.unit8.rotom.model.BreadCrumb;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import java.util.*;
 import java.util.function.Function;

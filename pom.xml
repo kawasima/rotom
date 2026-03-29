@@ -12,7 +12,7 @@
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-        <enkan.version>0.14.0</enkan.version>
+        <enkan.version>0.14.1</enkan.version>
     </properties>
 
     <build>
@@ -234,7 +234,13 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>3.6.3</version>
                         <configuration>
-                            <mainClass>DevMain</mainClass>
+                            <executable>${java.home}/bin/java</executable>
+                            <workingDirectory>${project.basedir}</workingDirectory>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>DevMain</argument>
+                            </arguments>
                         </configuration>
                     </plugin>
                 </plugins>
