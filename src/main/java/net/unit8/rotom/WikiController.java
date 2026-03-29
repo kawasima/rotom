@@ -258,4 +258,34 @@ public class WikiController {
         response.setContentType("text/html; charset=utf-8");
         return response;
     }
+
+    @RolesAllowed("page:edit")
+    public HttpResponse restore(Parameters params, UserPermissionPrincipal principal) {
+        String path = sanitizePath(params.get("path"));
+        String sha1 = params.get("sha1");
+
+        Page oldPage = wiki.getPage(path, ObjectId.fromString(sha1));
+        if (oldPage == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "history?path=" + path, SEE_OTHER);
+        }
+
+        PersonIdent committer;
+        if (principal != null) {
+            committer = new PersonIdent(principal.getName(), Objects.toString(principal.getProfiles().get("email")));
+        } else {
+            committer = new PersonIdent("anonymous", "anonymous@example.com");
+        }
+
+        Page currentPage = wiki.getPage(path);
+        wiki.updatePage(currentPage, null, null,
+                oldPage.getTextData().getBytes(StandardCharsets.UTF_8),
+                new Commit(committer.getName(), committer.getEmailAddress(),
+                        "Restored to version " + sha1.substring(0, 8)));
+
+        Page updated = wiki.getPage(path);
+        indexManager.save(updated);
+        return UrlRewriter.redirect(WikiController.class,
+                "showPageOrFile?path=" + updated.getUrlPath(), SEE_OTHER);
+    }
 }
