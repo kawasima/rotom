@@ -9,6 +9,7 @@ import enkan.component.jetty.JettyComponent;
 import enkan.config.EnkanSystemFactory;
 import enkan.system.EnkanSystem;
 import net.unit8.bouncr.sign.JsonWebToken;
+import net.unit8.rotom.model.MarkupType;
 import net.unit8.rotom.model.Wiki;
 import net.unit8.rotom.search.IndexManager;
 import org.eclipse.jgit.lib.Repository;
@@ -37,6 +38,9 @@ public class RotomSystemFactory implements EnkanSystemFactory {
 
     @Override
     public EnkanSystem create() {
+        String basePath = Env.getString("BASE_PATH", "");
+        MarkupType.configureAll(basePath);
+
         return EnkanSystem.of(
                 "hmac", new HmacEncoder(),
                 "jackson", new JacksonBeansConverter(),
@@ -48,7 +52,7 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                         .set(IndexManager::setIndexPath, Paths.get("index"))
                         .build(),
                 "config", builder(new RotomConfiguration())
-                        .set(RotomConfiguration::setBasePath, Env.getString("BASE_PATH", ""))
+                        .set(RotomConfiguration::setBasePath, basePath)
                         .build(),
                 "jwt", new JsonWebToken(),
                 "app", new ApplicationComponent<>("net.unit8.rotom.RotomApplicationFactory"),
