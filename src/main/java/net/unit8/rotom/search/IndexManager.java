@@ -13,26 +13,22 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.ZThread;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class IndexManager extends SystemComponent<IndexManager> {
     private Directory directory;
     private IndexWriter writer;
     private SearcherManager searcherManager;
     private Analyzer analyzer;
-
-    private ZContext ctx;
-    private ZMQ.Socket socket;
+    private ExecutorService executor;
     private Path indexPath;
 
     @Override
@@ -50,9 +46,11 @@ public class IndexManager extends SystemComponent<IndexManager> {
                     c.writer = new IndexWriter(c.directory, config);
 
                     c.searcherManager = new SearcherManager(c.writer, new SearcherFactory());
-
-                    c.ctx = new ZContext();
-                    c.socket = ZThread.fork(c.ctx, new LuceneTaskRunner(), c.writer, c.searcherManager);
+                    c.executor = Executors.newSingleThreadExecutor(r -> {
+                        Thread t = new Thread(r, "lucene-index-worker");
+                        t.setDaemon(true);
+                        return t;
+                    });
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -60,6 +58,15 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
             @Override
             public void stop(IndexManager c) {
+                if (c.executor != null) {
+                    c.executor.shutdown();
+                    try {
+                        c.executor.awaitTermination(5, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
                 if (c.searcherManager != null) {
                     try {
                         c.searcherManager.close();
@@ -81,10 +88,6 @@ public class IndexManager extends SystemComponent<IndexManager> {
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
-                }
-
-                if (c.ctx != null) {
-                    c.ctx.destroy();
                 }
             }
         };
@@ -145,19 +148,29 @@ public class IndexManager extends SystemComponent<IndexManager> {
     }
 
     public void save(Page page) {
-        ZMsg msg = new ZMsg();
-        msg.add("update");
-        msg.add(page.getDir() + "/" + page.getName());
-        msg.add(page.getName());
-        msg.add(page.getFormattedData());
-        msg.add(String.valueOf(page.getModifiedTime()));
-        msg.send(socket);
+        String path = page.getDir() + "/" + page.getName();
+        String name = page.getName();
+        String data = page.getFormattedData();
+        String modified = String.valueOf(page.getModifiedTime());
+        executor.submit(() -> {
+            LuceneTaskRunner.update(writer, path, name, data, modified);
+            refreshSearcher();
+        });
     }
 
     public void deleteAll() {
-        ZMsg msg = new ZMsg();
-        msg.push("deleteAll");
-        msg.send(socket);
+        executor.submit(() -> {
+            LuceneTaskRunner.deleteAll(writer);
+            refreshSearcher();
+        });
+    }
+
+    private void refreshSearcher() {
+        try {
+            searcherManager.maybeRefresh();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void setIndexPath(Path indexPath) {

@@ -4,11 +4,6 @@ import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.SearcherManager;
-import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.ZThread;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,45 +11,11 @@ import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.util.stream.Collectors;
 
-public class LuceneTaskRunner implements ZThread.IAttachedRunnable {
+public class LuceneTaskRunner {
 
-    @Override
-    public void run(Object[] args, ZContext ctx, ZMQ.Socket pipe) {
-        boolean shutdown = false;
-        IndexWriter writer = (IndexWriter) args[0];
-        SearcherManager searcherManager = (SearcherManager) args[1];
-        while (!shutdown) {
-            ZMsg msg = ZMsg.recvMsg(pipe);
-            String type = msg.popString();
-            switch (type) {
-                case "deleteAll":
-                    deleteAll(writer);
-                    refreshSearcher(searcherManager);
-                    break;
-                case "update":
-                    update(writer,
-                        msg.pop().getString(ZMQ.CHARSET),
-                        msg.pop().getString(ZMQ.CHARSET),
-                        msg.pop().getString(ZMQ.CHARSET),
-                        msg.popString());
-                    refreshSearcher(searcherManager);
-                    break;
-                case "shutdown":
-                    shutdown = true;
-                    break;
-            }
-        }
-    }
+    private LuceneTaskRunner() {}
 
-    private void refreshSearcher(SearcherManager searcherManager) {
-        try {
-            searcherManager.maybeRefresh();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public void update(IndexWriter writer, String path, String name, String data, String modified) {
+    public static void update(IndexWriter writer, String path, String name, String data, String modified) {
         Term term = new Term("path", path);
         Document doc = new Document();
 
@@ -73,7 +34,7 @@ public class LuceneTaskRunner implements ZThread.IAttachedRunnable {
         }
     }
 
-    public void deleteAll(IndexWriter writer) {
+    public static void deleteAll(IndexWriter writer) {
         try {
             writer.deleteAll();
         } catch (IOException e) {
