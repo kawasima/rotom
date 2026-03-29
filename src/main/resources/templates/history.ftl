@@ -43,13 +43,15 @@
                                         ${version.shortMessage}
                                         [<a href="${urlFor('showPageOrFile?path=' + page.urlPath + '&sha1=' + version.id.getName())}">${version.id.getName()[0..7]}</a>]
                                     </td>
-                                    <#if hasPermission(userPrincipal, 'page:edit') && !version?is_first>
+                                    <#if hasPermission(userPrincipal, 'page:edit')>
                                     <td class="restore">
+                                        <#if !version?is_first>
                                         <form method="post" action="${urlFor('restore?path=' + page.urlPath)}"
                                               onsubmit="return confirm('Restore this page to version ${version.id.getName()[0..7]}?');">
                                             <input type="hidden" name="sha1" value="${version.id.getName()}">
                                             <button type="submit" class="minibutton">Restore</button>
                                         </form>
+                                        </#if>
                                     </td>
                                     </#if>
                                 </tr>

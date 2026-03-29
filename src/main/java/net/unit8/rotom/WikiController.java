@@ -263,6 +263,10 @@ public class WikiController {
     public HttpResponse restore(Parameters params, UserPermissionPrincipal principal) {
         String path = sanitizePath(params.get("path"));
         String sha1 = params.get("sha1");
+        if (sha1 == null || !sha1.matches("[a-f0-9]{40}")) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "history?path=" + path, SEE_OTHER);
+        }
 
         Page oldPage = wiki.getPage(path, ObjectId.fromString(sha1));
         if (oldPage == null) {
