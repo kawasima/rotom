@@ -4,46 +4,37 @@ import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
 import net.unit8.rotom.model.Page;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ja.JapaneseAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.TextFragment;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.zeromq.ZContext;
-import org.zeromq.ZMQ;
-import org.zeromq.ZMsg;
-import org.zeromq.ZThread;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class IndexManager extends SystemComponent<IndexManager> {
     private Directory directory;
     private IndexWriter writer;
-    private volatile DirectoryReader reader;
-    private volatile IndexSearcher searcher;
+    private SearcherManager searcherManager;
     private Analyzer analyzer;
-    private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
-
-    private ZContext ctx;
-    private ZMQ.Socket socket;
+    private ExecutorService executor;
     private Path indexPath;
 
     @Override
@@ -55,32 +46,17 @@ public class IndexManager extends SystemComponent<IndexManager> {
                     c.directory = FSDirectory.open(c.indexPath);
                     c.analyzer = new JapaneseAnalyzer();
 
-                    IndexWriterConfig config = new IndexWriterConfig(analyzer);
+                    IndexWriterConfig config = new IndexWriterConfig(c.analyzer);
                     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+                    config.setCommitOnClose(true);
                     c.writer = new IndexWriter(c.directory, config);
-                    c.writer.commit();
 
-                    c.reader = DirectoryReader.open(c.writer);
-                    c.searcher = new IndexSearcher(c.reader);
-
-                    c.ctx = new ZContext();
-                    ZMQ.Socket commitSocket = ZThread.fork(c.ctx, (args, ctx, pipe) -> {
-                        while(true) {
-                            pipe.recv();
-                            // Reader re-open
-                            try {
-                                c.writer.commit();
-                                DirectoryReader newReader = DirectoryReader.openIfChanged(c.reader, c.writer);
-                                if (newReader != null) {
-                                    c.reader = newReader;
-                                    c.searcher = new IndexSearcher(newReader);
-                                }
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        }
+                    c.searcherManager = new SearcherManager(c.writer, new SearcherFactory());
+                    c.executor = Executors.newSingleThreadExecutor(r -> {
+                        Thread t = new Thread(r, "lucene-index-worker");
+                        t.setDaemon(true);
+                        return t;
                     });
-                    c.socket = ZThread.fork(c.ctx, new LuceneTaskRunner(), writer, commitSocket);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -88,9 +64,18 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
             @Override
             public void stop(IndexManager c) {
-                if (c.reader != null) {
+                if (c.executor != null) {
+                    c.executor.shutdown();
                     try {
-                        c.reader.close();
+                        c.executor.awaitTermination(5, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                if (c.searcherManager != null) {
+                    try {
+                        c.searcherManager.close();
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -110,66 +95,109 @@ public class IndexManager extends SystemComponent<IndexManager> {
                         throw new UncheckedIOException(e);
                     }
                 }
-
-                if (c.ctx != null) {
-                    c.ctx.destroy();
-                }
             }
         };
     }
 
     public Pagination<FoundPage> search(String queryStr, int offset, int limit) {
+        if (queryStr == null || queryStr.isBlank()) {
+            return new Pagination<>(List.of(), 0, offset, limit, true);
+        }
+
+        IndexSearcher searcher = null;
         try {
-            if (queryStr == null || queryStr.isBlank()) {
-                return new Pagination<>(List.of(), 0, offset, limit);
-            }
             QueryParser parser = new QueryParser("body", new JapaneseAnalyzer());
             Query query = parser.parse(QueryParser.escape(queryStr));
             int upper = offset + limit;
-            TopDocs results = searcher.search(query, upper);
-            Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
 
+            searcher = searcherManager.acquire();
+            TopDocs results = searcher.search(query, upper);
+
+            UnifiedHighlighter highlighter = UnifiedHighlighter.builder(searcher, analyzer)
+                    .withMaxLength(Integer.MAX_VALUE)
+                    .build();
+            String[] bodyHighlights = highlighter.highlight("body", query, results);
+
+            StoredFields storedFields = searcher.storedFields();
             List<FoundPage> foundPages = new ArrayList<>(limit);
             long count = Math.min(results.scoreDocs.length, Math.min(upper, results.totalHits.value));
             for (int i = offset; i < count; i++) {
-                Document doc = reader.document(results.scoreDocs[i].doc);
-                TokenStream tokenStream = analyzer.tokenStream(null, doc.get("body"));
-
-                TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, doc.get("body"), false, 10);
+                var doc = storedFields.document(results.scoreDocs[i].doc);
+                String summary = (bodyHighlights != null && i < bodyHighlights.length && bodyHighlights[i] != null)
+                        ? bodyHighlights[i]
+                        : "";
                 foundPages.add(
                         new FoundPage(doc.get("path"),
                                 doc.get("name"),
-                                Arrays.stream(fragments)
-                                        .filter(f -> f != null && f.getScore() > 0)
-                                        .map(TextFragment::toString)
-                                        .collect(Collectors.joining()),
+                                summary,
                                 results.scoreDocs[i].score));
             }
+
+            boolean exact = results.totalHits.relation == TotalHits.Relation.EQUAL_TO;
             return new Pagination<>(
                     foundPages,
                     results.totalHits.value,
                     offset,
-                    limit);
+                    limit,
+                    exact);
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (searcher != null) {
+                try {
+                    searcherManager.release(searcher);
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
         }
-
     }
 
     public void save(Page page) {
-        ZMsg msg = new ZMsg();
-        msg.add("update");
-        msg.add(page.getDir() + "/" + page.getName());
-        msg.add(page.getName());
-        msg.add(page.getFormattedData());
-        msg.add(String.valueOf(page.getModifiedTime()));
-        msg.send(socket);
+        String path = page.getDir() + "/" + page.getName();
+        String name = page.getName();
+        String data = page.getFormattedData();
+        String modified = String.valueOf(page.getModifiedTime());
+        executor.submit(() -> {
+            updateDocument(path, name, data, modified);
+            refreshSearcher();
+        });
     }
 
     public void deleteAll() {
-        ZMsg msg = new ZMsg();
-        msg.push("deleteAll");
-        msg.send(socket);
+        executor.submit(() -> {
+            try {
+                writer.deleteAll();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            refreshSearcher();
+        });
+    }
+
+    private void updateDocument(String path, String name, String data, String modified) {
+        try {
+            Document doc = new Document();
+            try (var reader = new BufferedReader(new HTMLStripCharFilter(new StringReader(data)))) {
+                doc.add(new Field("body",
+                        reader.lines().collect(Collectors.joining("\n")),
+                        TextField.TYPE_STORED));
+            }
+            doc.add(new StringField("path", path, Field.Store.YES));
+            doc.add(new TextField("name", name, Field.Store.YES));
+            doc.add(new LongPoint("modified", Long.valueOf(modified)));
+            writer.updateDocument(new Term("path", path), doc);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private void refreshSearcher() {
+        try {
+            searcherManager.maybeRefresh();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void setIndexPath(Path indexPath) {
