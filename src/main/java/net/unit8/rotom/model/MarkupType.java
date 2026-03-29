@@ -38,4 +38,10 @@ public enum MarkupType {
     public boolean match(String filename) {
         return extPattern.matcher(filename).find();
     }
+
+    public static void configureAll(String basePath) {
+        for (MarkupType mt : values()) {
+            mt.markup.configure(basePath);
+        }
+    }
 }
