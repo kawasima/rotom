@@ -49,7 +49,7 @@ public class Wiki extends SystemComponent<Wiki> {
     public List<Page> getPages(String path) {
         try {
             List<Page> pages = new ArrayList<>();
-            Ref head = git.getRepository().exactRef("refs/heads/master");
+            Ref head = git.getRepository().exactRef("refs/heads/" + ref);
             if (head == null) return Collections.emptyList();
             RevTree tree;
             try (RevWalk revWalk = new RevWalk(git.getRepository())) {
@@ -104,7 +104,7 @@ public class Wiki extends SystemComponent<Wiki> {
     public Page getPage(String name, ObjectId commitId) {
         try {
             if (commitId == null) {
-                Ref head = git.getRepository().exactRef("refs/heads/master");
+                Ref head = git.getRepository().exactRef("refs/heads/" + ref);
                 if (head == null) return null;
                 commitId = head.getObjectId();
             }
@@ -146,7 +146,7 @@ public class Wiki extends SystemComponent<Wiki> {
         String sanitizedName = name.replace(' ', '-');
         String sanitizedDir  = dir.replace(' ', '-');
 
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
             committer.addToIndex(sanitizedDir, sanitizedName, format, data);
             committer.commit(commit);
@@ -161,26 +161,25 @@ public class Wiki extends SystemComponent<Wiki> {
         if (name == null) name = page.getName();
         if (format == null) format = page.getFormat();
 
-        boolean rename = !Objects.equals(name, page.getName());
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
 
         try {
             committer.add(page.getPath(), data);
             committer.commit(commit);
         } catch (GitAPIException e) {
-
+            throw new IllegalStateException(e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     public void deletePage(Page page, Commit commit) {
-        Committer committer = new Committer(git.getRepository());
+        Committer committer = new Committer(git.getRepository(), ref);
         try {
             committer.rm(page.getPath());
             committer.commit(commit);
         } catch (GitAPIException e) {
-
+            throw new IllegalStateException(e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -238,8 +237,6 @@ public class Wiki extends SystemComponent<Wiki> {
             try (ObjectReader reader = repository.newObjectReader()) {
                 treeParser.reset(reader, tree.getId());
             }
-
-            walk.dispose();
 
             return treeParser;
         }

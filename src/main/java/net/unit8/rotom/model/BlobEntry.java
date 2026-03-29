@@ -60,7 +60,7 @@ public class BlobEntry {
         return sha;
     }
 
-    public PersonIdent getComitter() {
+    public PersonIdent getCommitter() {
         return committer;
     }
 

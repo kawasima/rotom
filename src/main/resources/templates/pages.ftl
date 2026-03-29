@@ -50,7 +50,7 @@
                 </div>
                 <#else>
                 <p id="no-results">
-                    There are no pages in <strong>$ref</strong>
+                    There are no pages in <strong>${wiki.ref}</strong>
                 </p>
             </#list>
         </div>

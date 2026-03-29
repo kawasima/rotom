@@ -1,6 +1,5 @@
 package net.unit8.rotom.model;
 
-import enkan.util.CodecUtils;
 import net.unit8.rotom.model.filter.Render;
 import org.eclipse.jgit.lib.*;
 
@@ -111,7 +110,7 @@ public class Page {
     }
 
     public PersonIdent getCommitter() {
-        return blob.getComitter();
+        return blob.getCommitter();
     }
 
     public long getModifiedTime() {

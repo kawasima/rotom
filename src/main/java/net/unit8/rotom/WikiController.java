@@ -32,6 +32,17 @@ import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
 import static enkan.util.ThreadingUtils.*;
 
 public class WikiController {
+    private static String sanitizePath(String path) {
+        if (path == null) return "";
+        // Normalize and reject path traversal
+        String normalized = path.replace('\\', '/');
+        if (normalized.contains("../") || normalized.contains("/..") || normalized.equals("..")) {
+            throw new IllegalArgumentException("Invalid path: " + path);
+        }
+        // Strip leading slashes
+        return normalized.replaceFirst("^/+", "");
+    }
+
     @Inject
     private BeansConverter beansConverter;
 
@@ -46,8 +57,8 @@ public class WikiController {
 
     @RolesAllowed("page:read")
     public HttpResponse pages(Parameters params) {
-        String path = params.get("path");
-        List<Page> pages = wiki.getPages(Objects.toString(path, ""));
+        String path = sanitizePath(params.get("path"));
+        List<Page> pages = wiki.getPages(path);
         return templateEngine.render("pages",
                 "path", path,
                 "pages", pages,
@@ -71,7 +82,7 @@ public class WikiController {
 
     @RolesAllowed("page:create")
     public HttpResponse createForm(Parameters params) {
-        String path = params.get("path");
+        String path = sanitizePath(params.get("path"));
         Page page = new Page(path);
         return templateEngine.render("create",
                 "isCreatePage", true,
@@ -103,7 +114,7 @@ public class WikiController {
 
     @RolesAllowed("page:edit")
     public HttpResponse edit(Parameters params) {
-        String path = params.get("path");
+        String path = sanitizePath(params.get("path"));
         Page page = wiki.getPage(path);
         if (page == null) {
             return UrlRewriter.redirect(WikiController.class,
@@ -122,7 +133,7 @@ public class WikiController {
     @RolesAllowed("page:edit")
     public HttpResponse update(Parameters params, UserPermissionPrincipal principal) {
         String name = params.get("page");
-        String path = params.get("path");
+        String path = sanitizePath(params.get("path"));
         String format = params.get("format");
         PersonIdent committer;
         if (principal != null) {
@@ -142,7 +153,7 @@ public class WikiController {
 
     @RolesAllowed("page:delete")
     public HttpResponse delete(Parameters params, UserPermissionPrincipal principal) {
-        Page page = some(params.get("path"), path -> wiki.getPage(path)).orElse(null);
+        Page page = some(sanitizePath(params.get("path")), path -> wiki.getPage(path)).orElse(null);
         if (page != null) {
             PersonIdent committer;
             if (principal != null) {
@@ -160,7 +171,7 @@ public class WikiController {
 
     @RolesAllowed("page:read")
     public HttpResponse history(Parameters params) {
-        String path = params.get("path");
+        String path = sanitizePath(params.get("path"));
         Page page = wiki.getPage(path);
         if (page == null) {
             return UrlRewriter.redirect(WikiController.class,
@@ -183,7 +194,7 @@ public class WikiController {
 
     @RolesAllowed("page:read")
     public HttpResponse showPageOrFile(Parameters params) {
-        String path = params.get("path");
+        String path = sanitizePath(params.get("path"));
         ObjectId sha1 = some(params.get("sha1"),
                 ObjectId::fromString)
                 .orElse(null);
@@ -223,7 +234,7 @@ public class WikiController {
 
     @RolesAllowed("page:read")
     public HttpResponse doCompare(Parameters params) {
-        Page page = wiki.getPage(params.get("path"));
+        Page page = wiki.getPage(sanitizePath(params.get("path")));
         String diffEntries = wiki.getDiff(page, params.get("hash1"), params.get("hash2"));
 
         return templateEngine.render("compare",

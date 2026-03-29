@@ -15,9 +15,15 @@ public class RotomConfiguration extends SystemComponent<RotomConfiguration> {
     private String basePath = "";
     private AuthBackend<?, ?> authBackend = new AnonymousBackend();
     private Endpoint<HttpRequest, HttpResponse> unauthEndpoint =
-            (Endpoint<HttpRequest, HttpResponse>) req ->
-                    HttpResponseUtils.redirect("/my/signIn?url=" + req.getUri(),
+            (Endpoint<HttpRequest, HttpResponse>) req -> {
+                    String uri = req.getUri();
+                    // Only allow relative paths to prevent open redirect
+                    if (uri != null && !uri.startsWith("/")) {
+                        uri = "/";
+                    }
+                    return HttpResponseUtils.redirect("/my/signIn?url=" + uri,
                             HttpResponseUtils.RedirectStatusCode.TEMPORARY_REDIRECT);
+            };
 
     @Override
     protected ComponentLifecycle<RotomConfiguration> lifecycle() {

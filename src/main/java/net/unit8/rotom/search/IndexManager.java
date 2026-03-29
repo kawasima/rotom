@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 public class IndexManager extends SystemComponent<IndexManager> {
     private Directory directory;
     private IndexWriter writer;
-    private DirectoryReader reader;
-    private IndexSearcher searcher;
+    private volatile DirectoryReader reader;
+    private volatile IndexSearcher searcher;
     private Analyzer analyzer;
     private QueryParser parser;
     private SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
@@ -72,8 +72,11 @@ public class IndexManager extends SystemComponent<IndexManager> {
                             // Reader re-open
                             try {
                                 c.writer.commit();
-                                c.reader = DirectoryReader.openIfChanged(c.reader, c.writer);
-                                c.searcher = new IndexSearcher(reader);
+                                DirectoryReader newReader = DirectoryReader.openIfChanged(c.reader, c.writer);
+                                if (newReader != null) {
+                                    c.reader = newReader;
+                                    c.searcher = new IndexSearcher(newReader);
+                                }
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
@@ -119,14 +122,17 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
     public Pagination<FoundPage> search(String queryStr, int offset, int limit) {
         try {
+            if (queryStr == null || queryStr.isBlank()) {
+                return new Pagination<>(List.of(), 0, offset, limit);
+            }
             QueryParser parser = new QueryParser("body", new JapaneseAnalyzer());
-            Query query = parser.parse(queryStr);
+            Query query = parser.parse(QueryParser.escape(queryStr));
             int upper = offset + limit;
             TopDocs results = searcher.search(query, upper);
             Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
 
             List<FoundPage> foundPages = new ArrayList<>(limit);
-            long count = Math.min(upper, results.totalHits.value);
+            long count = Math.min(results.scoreDocs.length, Math.min(upper, results.totalHits.value));
             for (int i = offset; i < count; i++) {
                 Document doc = reader.document(results.scoreDocs[i].doc);
                 TokenStream tokenStream = analyzer.tokenStream(null, doc.get("body"));

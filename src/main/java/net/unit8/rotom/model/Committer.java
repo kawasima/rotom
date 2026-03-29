@@ -10,26 +10,27 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.text.MessageFormat;
 import java.util.Locale;
 
 public class Committer {
     private Repository repository;
+    private String ref;
     private DirCache index;
 
-    public Committer(Repository repository) {
+    public Committer(Repository repository, String ref) {
         this.repository = repository;
+        this.ref = ref;
     }
 
     private DirCache createTemporaryIndex(final ObjectId headId, final String path, byte[] data) {
         final DirCache inCoreIndex = DirCache.newInCore();
         final DirCacheBuilder dcBuilder = inCoreIndex.builder();
-        final ObjectInserter inserter = repository.newObjectInserter();
 
-        try {
+        try (ObjectInserter inserter = repository.newObjectInserter()) {
             if (data != null) {
                 final DirCacheEntry dcEntry = new DirCacheEntry(path);
                 dcEntry.setLength(data.length);
@@ -41,29 +42,28 @@ public class Committer {
             }
 
             if (headId != null) {
-                final TreeWalk treeWalk = new TreeWalk(repository);
-                final int hIdx = treeWalk.addTree(new RevWalk(repository).parseTree(headId));
-                treeWalk.setRecursive(true);
+                try (RevWalk revWalk = new RevWalk(repository);
+                     TreeWalk treeWalk = new TreeWalk(repository)) {
+                    final int hIdx = treeWalk.addTree(revWalk.parseTree(headId));
+                    treeWalk.setRecursive(true);
 
-                while (treeWalk.next()) {
-                    final String walkPath = treeWalk.getPathString();
-                    final CanonicalTreeParser hTree = treeWalk.getTree(hIdx, CanonicalTreeParser.class);
+                    while (treeWalk.next()) {
+                        final String walkPath = treeWalk.getPathString();
+                        final CanonicalTreeParser hTree = treeWalk.getTree(hIdx, CanonicalTreeParser.class);
 
-                    if (!walkPath.equals(path)) {
-                        final DirCacheEntry dcEntry = new DirCacheEntry(walkPath);
-                        dcEntry.setObjectId(hTree.getEntryObjectId());
-                        dcEntry.setFileMode(hTree.getEntryFileMode());
-                        dcBuilder.add(dcEntry);
+                        if (!walkPath.equals(path)) {
+                            final DirCacheEntry dcEntry = new DirCacheEntry(walkPath);
+                            dcEntry.setObjectId(hTree.getEntryObjectId());
+                            dcEntry.setFileMode(hTree.getEntryFileMode());
+                            dcBuilder.add(dcEntry);
+                        }
                     }
                 }
-                treeWalk.close();
             }
 
             dcBuilder.finish();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            inserter.close();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
 
         if (data == null) {
@@ -84,7 +84,7 @@ public class Committer {
     }
 
     public void addToIndex(String path, byte[] data) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
+        final ObjectId headId = repository.resolve(ref + "^{commit}");
         index = createTemporaryIndex(headId, path, data);
     }
 
@@ -93,14 +93,13 @@ public class Committer {
     }
 
     public void rm(String path) throws IOException {
-        final ObjectId headId = repository.resolve("master^{commit}");
+        final ObjectId headId = repository.resolve(ref + "^{commit}");
         index = createTemporaryIndex(headId, path, null);
     }
 
     public ObjectId commit(Commit commitInfo) throws GitAPIException, IOException {
-        final ObjectInserter odi = repository.newObjectInserter();
-        try {
-            final ObjectId headId = repository.resolve("master^{commit}");
+        try (ObjectInserter odi = repository.newObjectInserter()) {
+            final ObjectId headId = repository.resolve(ref + "^{commit}");
             final ObjectId indexTreeId = index.writeTree(odi);
             final CommitBuilder commit = new CommitBuilder();
             commit.setAuthor(commitInfo.getPersonIdent());
@@ -112,14 +111,12 @@ public class Committer {
             }
             commit.setTreeId(indexTreeId);
 
-            // Insert the commit into the repository
             final ObjectId commitId = odi.insert(commit);
             odi.flush();
 
-            final RevWalk revWalk = new RevWalk(repository);
-            try {
+            try (RevWalk revWalk = new RevWalk(repository)) {
                 final RevCommit revCommit = revWalk.parseCommit(commitId);
-                final RefUpdate ru = repository.updateRef("refs/heads/" + "master");
+                final RefUpdate ru = repository.updateRef("refs/heads/" + ref);
                 if (headId == null) {
                     ru.setExpectedOldObjectId(ObjectId.zeroId());
                 } else {
@@ -140,11 +137,7 @@ public class Committer {
                         throw new JGitInternalException(MessageFormat.format(JGitText.get().updatingRefFailed, Constants.HEAD, commitId.toString(), rc));
                 }
                 return commitId;
-            } finally {
-                revWalk.close();
             }
-        } finally {
-            odi.close();
         }
     }
 }

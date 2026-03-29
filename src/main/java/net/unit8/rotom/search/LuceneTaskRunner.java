@@ -60,7 +60,7 @@ public class LuceneTaskRunner implements ZThread.IAttachedRunnable{
             doc.add(new LongPoint("modified", Long.valueOf(modified)));
             writer.updateDocument(term, doc);
         } catch (IOException e) {
-
+            throw new UncheckedIOException(e);
         }
     }
 
