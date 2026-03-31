@@ -139,7 +139,7 @@ public class IndexManager extends SystemComponent<IndexManager> {
 
                 TextFragment[] fragments = highlighter.getBestTextFragments(tokenStream, doc.get("body"), false, 10);
                 foundPages.add(
-                        new FoundPage(doc.get("path"),
+                        new FoundPage(doc.get("urlPath"),
                                 doc.get("name"),
                                 Arrays.stream(fragments)
                                         .filter(f -> f != null && f.getScore() > 0)
@@ -161,7 +161,7 @@ public class IndexManager extends SystemComponent<IndexManager> {
     public void save(Page page) {
         ZMsg msg = new ZMsg();
         msg.add("update");
-        msg.add(page.getDir() + "/" + page.getName());
+        msg.add(page.getUrlPath());
         msg.add(page.getName());
         msg.add(page.getFormattedData());
         msg.add(String.valueOf(page.getModifiedTime()));
