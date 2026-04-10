@@ -339,6 +339,24 @@ class WikiControllerIntegrationTest {
     }
 
     @Test
+    void restoreWhenCurrentPageDeletedRedirectsToHistory() throws Exception {
+        // Create a page, capture its SHA, then delete it so currentPage is null at restore time
+        wiki.writePage("deleted-page", "markdown", "# original".getBytes(StandardCharsets.UTF_8),
+                null, new Commit("test", "test@example.com", "initial"));
+        var versions = wiki.getVersions(enkan.collection.OptionMap.of(
+                "path", wiki.getPage("deleted-page").getPath()));
+        String sha = versions.get(0).getId().getName();
+        wiki.deletePage(wiki.getPage("deleted-page"),
+                new Commit("test", "test@example.com", "delete"));
+
+        Parameters params = Parameters.of("path", "deleted-page", "sha1", sha);
+        HttpResponse response = controller.restore(params, null);
+        assertEquals(303, statusOf(response));
+        assertTrue(locationOf(response).contains("history"),
+                "restore() on a deleted page should redirect to history, not throw NPE");
+    }
+
+    @Test
     void restoreValidShaRestoresPageContent() throws Exception {
         wiki.writePage("restore-target", "markdown", "# v1 content".getBytes(StandardCharsets.UTF_8),
                 null, new Commit("test", "test@example.com", "v1"));

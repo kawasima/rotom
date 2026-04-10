@@ -284,6 +284,10 @@ public class WikiController {
         PersonIdent committer = toPersonIdent(principal);
 
         Page currentPage = wiki.getPage(path);
+        if (currentPage == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "history?path=" + path, SEE_OTHER);
+        }
         wiki.updatePage(currentPage, null, null,
                 oldPage.getTextData().getBytes(StandardCharsets.UTF_8),
                 new Commit(committer.getName(), committer.getEmailAddress(),
