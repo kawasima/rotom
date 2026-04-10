@@ -101,6 +101,11 @@
         </dependency>
         <dependency>
             <groupId>net.unit8.enkan</groupId>
+            <artifactId>enkan-web</artifactId>
+            <version>${enkan.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.unit8.enkan</groupId>
             <artifactId>kotowari</artifactId>
             <version>${enkan.version}</version>
         </dependency>
