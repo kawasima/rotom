@@ -8,6 +8,8 @@ import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -139,6 +141,8 @@ public class Wiki extends SystemComponent<Wiki> {
                     return new Page(path, blob);
                 }
             }
+        } catch (MissingObjectException | IncorrectObjectTypeException e) {
+            return null;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
