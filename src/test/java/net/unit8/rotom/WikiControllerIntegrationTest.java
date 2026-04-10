@@ -14,7 +14,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

@@ -56,7 +56,7 @@ public class WikiController {
     private IndexManager indexManager;
 
     @Inject
-    private TemplateEngine templateEngine;
+    private TemplateEngine<?> templateEngine;
 
     @RolesAllowed("page:read")
     public HttpResponse pages(Parameters params) {
