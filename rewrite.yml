@@ -1,0 +1,246 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: net.unit8.rotom.EnkanMigration015
+displayName: Migrate to enkan 0.15.0
+description: >
+  Migrate package names changed in enkan 0.15.0 (JPMS split-package resolution).
+  Uses text-based find-and-replace so it works even when the project does not
+  compile against the old packages.
+recipeList:
+  # ── enkan.data.* ────────────────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.HttpRequest;"
+      replace: "import enkan.web.data.HttpRequest;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.HttpResponse;"
+      replace: "import enkan.web.data.HttpResponse;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.Cookie;"
+      replace: "import enkan.web.data.Cookie;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.DefaultHttpRequest;"
+      replace: "import enkan.web.data.DefaultHttpRequest;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.DefaultHttpResponse;"
+      replace: "import enkan.web.data.DefaultHttpResponse;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.ContentNegotiable;"
+      replace: "import enkan.web.data.ContentNegotiable;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.ForgeryDetectable;"
+      replace: "import enkan.web.data.ForgeryDetectable;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.HostCookie;"
+      replace: "import enkan.web.data.HostCookie;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.SecureCookie;"
+      replace: "import enkan.web.data.SecureCookie;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.SseEmitter;"
+      replace: "import enkan.web.data.SseEmitter;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.SseEvent;"
+      replace: "import enkan.web.data.SseEvent;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.StreamingBody;"
+      replace: "import enkan.web.data.StreamingBody;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.WebSessionAvailable;"
+      replace: "import enkan.web.data.WebSessionAvailable;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.DefaultConversation;"
+      replace: "import enkan.web.data.DefaultConversation;"
+      filePattern: "**/*.java"
+
+  # wildcard import
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.data.*;"
+      replace: "import enkan.web.data.*;"
+      filePattern: "**/*.java"
+
+  # ── enkan.application.* ─────────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.application.WebApplication;"
+      replace: "import enkan.web.application.WebApplication;"
+      filePattern: "**/*.java"
+
+  # ── enkan.collection.Headers ────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.collection.Headers;"
+      replace: "import enkan.web.collection.Headers;"
+      filePattern: "**/*.java"
+
+  # ── enkan.endpoint.* ────────────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.endpoint.ResourceEndpoint;"
+      replace: "import enkan.web.endpoint.ResourceEndpoint;"
+      filePattern: "**/*.java"
+
+  # ── enkan.middleware.* ──────────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.*;"
+      replace: "import enkan.web.middleware.*;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.NestedParamsMiddleware;"
+      replace: "import enkan.web.middleware.NestedParamsMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.ParamsMiddleware;"
+      replace: "import enkan.web.middleware.ParamsMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.SessionMiddleware;"
+      replace: "import enkan.web.middleware.SessionMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.WebMiddleware;"
+      replace: "import enkan.web.middleware.WebMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.ContentNegotiationMiddleware;"
+      replace: "import enkan.web.middleware.ContentNegotiationMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.ContentTypeMiddleware;"
+      replace: "import enkan.web.middleware.ContentTypeMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.CookiesMiddleware;"
+      replace: "import enkan.web.middleware.CookiesMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.DefaultCharsetMiddleware;"
+      replace: "import enkan.web.middleware.DefaultCharsetMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.ResourceMiddleware;"
+      replace: "import enkan.web.middleware.ResourceMiddleware;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.idempotency.IdempotencyEntry;"
+      replace: "import enkan.web.middleware.idempotency.IdempotencyEntry;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.multipart.BoundedInputStream;"
+      replace: "import enkan.web.middleware.multipart.BoundedInputStream;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.multipart.MultipartParser;"
+      replace: "import enkan.web.middleware.multipart.MultipartParser;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.negotiation.AcceptHeaderNegotiator;"
+      replace: "import enkan.web.middleware.negotiation.AcceptHeaderNegotiator;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.negotiation.ContentNegotiator;"
+      replace: "import enkan.web.middleware.negotiation.ContentNegotiator;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.normalizer.Normalizer;"
+      replace: "import enkan.web.middleware.normalizer.Normalizer;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.normalizer.TrimNormalizer;"
+      replace: "import enkan.web.middleware.normalizer.TrimNormalizer;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.session.KeyValueStore;"
+      replace: "import enkan.web.middleware.session.KeyValueStore;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.middleware.session.MemoryStore;"
+      replace: "import enkan.web.middleware.session.MemoryStore;"
+      filePattern: "**/*.java"
+
+  # ── enkan.security.backend.* ────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.security.backend.SessionBackend;"
+      replace: "import enkan.web.security.backend.SessionBackend;"
+      filePattern: "**/*.java"
+
+  # ── enkan.util.* ────────────────────────────────────────────────────────────
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.HttpRequestUtils;"
+      replace: "import enkan.web.util.HttpRequestUtils;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.HttpResponseUtils;"
+      replace: "import enkan.web.util.HttpResponseUtils;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import static enkan.util.HttpResponseUtils."
+      replace: "import static enkan.web.util.HttpResponseUtils."
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.CodecUtils;"
+      replace: "import enkan.web.util.CodecUtils;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.ETagUtils;"
+      replace: "import enkan.web.util.ETagUtils;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.HttpDateFormat;"
+      replace: "import enkan.web.util.HttpDateFormat;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.ParsingUtils;"
+      replace: "import enkan.web.util.ParsingUtils;"
+      filePattern: "**/*.java"
+
+  - org.openrewrite.text.FindAndReplace:
+      find: "import enkan.util.ServletUtils;"
+      replace: "import enkan.servlet.util.ServletUtils;"
+      filePattern: "**/*.java"

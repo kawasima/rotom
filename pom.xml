@@ -12,7 +12,7 @@
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-        <enkan.version>0.14.1</enkan.version>
+        <enkan.version>0.15.0</enkan.version>
         <lucene.version>10.4.0</lucene.version>
         <flexmark.version>0.64.8</flexmark.version>
         <jgit.version>7.6.0.202603022253-r</jgit.version>
@@ -142,7 +142,7 @@
         <dependency>
             <groupId>net.unit8.enkan</groupId>
             <artifactId>enkan-bouncr</artifactId>
-            <version>0.10.0</version>
+            <version>${enkan.version}</version>
         </dependency>
 
         <dependency>

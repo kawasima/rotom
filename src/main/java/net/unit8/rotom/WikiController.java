@@ -2,7 +2,7 @@ package net.unit8.rotom;
 
 import enkan.collection.OptionMap;
 import enkan.collection.Parameters;
-import enkan.data.HttpResponse;
+import enkan.web.data.HttpResponse;
 import enkan.security.bouncr.UserPermissionPrincipal;
 import kotowari.component.TemplateEngine;
 import kotowari.routing.UrlRewriter;
@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static enkan.util.HttpResponseUtils.RedirectStatusCode.*;
+import static enkan.web.util.HttpResponseUtils.RedirectStatusCode.*;
 import static enkan.util.ThreadingUtils.*;
 
 public class WikiController {

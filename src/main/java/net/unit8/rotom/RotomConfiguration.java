@@ -4,10 +4,10 @@ package net.unit8.rotom;
 import enkan.Endpoint;
 import enkan.component.ComponentLifecycle;
 import enkan.component.SystemComponent;
-import enkan.data.HttpRequest;
-import enkan.data.HttpResponse;
+import enkan.web.data.HttpRequest;
+import enkan.web.data.HttpResponse;
 import enkan.security.AuthBackend;
-import enkan.util.HttpResponseUtils;
+import enkan.web.util.HttpResponseUtils;
 import net.unit8.rotom.middleware.backend.AnonymousBackend;
 
 

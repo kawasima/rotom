@@ -1,6 +1,6 @@
 package net.unit8.rotom.middleware.backend;
 
-import enkan.data.HttpRequest;
+import enkan.web.data.HttpRequest;
 import enkan.security.AuthBackend;
 import enkan.security.bouncr.UserPermissionPrincipal;
 
