@@ -6,6 +6,7 @@ import enkan.config.ApplicationFactory;
 import enkan.web.data.HttpRequest;
 import enkan.web.data.HttpResponse;
 import enkan.web.endpoint.ResourceEndpoint;
+import enkan.middleware.*;
 import enkan.web.middleware.*;
 import enkan.system.inject.ComponentInjector;
 import kotowari.middleware.*;
