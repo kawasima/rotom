@@ -294,6 +294,10 @@ public class WikiController {
                         "Restored to version " + sha1.substring(0, 8)));
 
         Page updated = wiki.getPage(path);
+        if (updated == null) {
+            return UrlRewriter.redirect(WikiController.class,
+                    "history?path=" + path, SEE_OTHER);
+        }
         indexManager.save(updated);
         return UrlRewriter.redirect(WikiController.class,
                 "showPageOrFile?path=" + updated.getUrlPath(), SEE_OTHER);
