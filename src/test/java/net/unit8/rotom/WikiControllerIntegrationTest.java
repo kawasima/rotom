@@ -2,7 +2,7 @@ package net.unit8.rotom;
 
 import enkan.collection.Parameters;
 import enkan.component.ComponentLifecycle;
-import enkan.data.HttpResponse;
+import enkan.web.data.HttpResponse;
 import enkan.security.bouncr.UserPermissionPrincipal;
 import enkan.system.EnkanSystem;
 import enkan.util.BeanBuilder;
@@ -14,7 +14,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.junit.jupiter.api.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

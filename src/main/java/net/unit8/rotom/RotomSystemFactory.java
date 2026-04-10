@@ -8,7 +8,6 @@ import enkan.component.jackson.JacksonBeansConverter;
 import enkan.component.jetty.JettyComponent;
 import enkan.config.EnkanSystemFactory;
 import enkan.system.EnkanSystem;
-import net.unit8.bouncr.sign.JsonWebToken;
 import net.unit8.rotom.model.MarkupType;
 import net.unit8.rotom.model.Wiki;
 import net.unit8.rotom.search.IndexManager;
@@ -54,7 +53,6 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                 "config", builder(new RotomConfiguration())
                         .set(RotomConfiguration::setBasePath, basePath)
                         .build(),
-                "jwt", new JsonWebToken(),
                 "app", new ApplicationComponent<>("net.unit8.rotom.RotomApplicationFactory"),
                 "http", builder(new JettyComponent())
                         .set(JettyComponent::setPort, Env.getInt("PORT", 3000))
@@ -62,7 +60,7 @@ public class RotomSystemFactory implements EnkanSystemFactory {
         ).relationships(
                 component("http").using("app"),
                 component("app").using(
-                        "config", "template", "jackson", "jwt", "wiki", "index")
+                        "config", "template", "jackson", "wiki", "index")
         );
     }
 }

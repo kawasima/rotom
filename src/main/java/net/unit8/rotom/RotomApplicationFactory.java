@@ -1,12 +1,13 @@
 package net.unit8.rotom;
 
 import enkan.Application;
-import enkan.application.WebApplication;
+import enkan.web.application.WebApplication;
 import enkan.config.ApplicationFactory;
-import enkan.data.HttpRequest;
-import enkan.data.HttpResponse;
-import enkan.endpoint.ResourceEndpoint;
+import enkan.web.data.HttpRequest;
+import enkan.web.data.HttpResponse;
+import enkan.web.endpoint.ResourceEndpoint;
 import enkan.middleware.*;
+import enkan.web.middleware.*;
 import enkan.system.inject.ComponentInjector;
 import kotowari.middleware.*;
 import kotowari.routing.Routes;
