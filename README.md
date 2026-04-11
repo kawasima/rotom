@@ -18,7 +18,7 @@ Git-based Wiki system — a [Gollum](https://github.com/gollum/gollum) clone bui
 
 ```shell
 mvn package
-java -jar target/rotom-0.1.0-SNAPSHOT.jar
+java -jar target/rotom-0.1.0.jar
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -40,7 +40,7 @@ Example:
 REPO_PATH=/var/lib/rotom/repo \
 INDEX_PATH=/var/lib/rotom/index \
 PORT=8080 \
-java -jar target/rotom-0.1.0-SNAPSHOT.jar
+java -jar target/rotom-0.1.0.jar
 ```
 
 ## Authentication
