@@ -48,7 +48,7 @@ public class RotomSystemFactory implements EnkanSystemFactory {
                         .set(Wiki::setRepository, getRepository())
                         .build(),
                 "index", builder(new IndexManager())
-                        .set(IndexManager::setIndexPath, Paths.get("index"))
+                        .set(IndexManager::setIndexPath, Paths.get(Env.getString("INDEX_PATH", "index")))
                         .build(),
                 "config", builder(new RotomConfiguration())
                         .set(RotomConfiguration::setBasePath, basePath)
