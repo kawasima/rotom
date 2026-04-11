@@ -236,9 +236,6 @@
     <profiles>
         <profile>
             <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <build>
                 <resources>
                     <resource>
@@ -271,10 +268,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.6.3</version>
                         <configuration>
-                            <executable>${java.home}/bin/java</executable>
-                            <workingDirectory>${project.basedir}</workingDirectory>
                             <arguments>
                                 <argument>-classpath</argument>
                                 <classpath/>
